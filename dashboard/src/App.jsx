@@ -7,26 +7,39 @@ const API_BASE = 'https://8000-iner9p11l1qajaf54x3x7-5634da27.sandbox.novita.ai'
 
 function App() {
   const [products, setProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
   const [brands, setBrands] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [hashieRank, setHashieRank] = useState(null);
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 60000); // 1분마다 갱신
+    const interval = setInterval(fetchData, 1800000); // 30분마다 갱신 (30분 = 1800000ms)
     return () => clearInterval(interval);
   }, []);
 
   const fetchData = async () => {
     try {
-      const [productsRes, brandsRes, statsRes] = await Promise.all([
+      const [productsRes, allProductsRes, brandsRes, statsRes] = await Promise.all([
         axios.get(`${API_BASE}/api/products/current?limit=10`),
+        axios.get(`${API_BASE}/api/products/current?limit=200`),
         axios.get(`${API_BASE}/api/brands/stats?limit=10`),
         axios.get(`${API_BASE}/api/health`)
       ]);
       setProducts(productsRes.data);
+      setAllProducts(allProductsRes.data);
       setBrands(brandsRes.data);
       setStats(statsRes.data);
+      
+      // 하시에 제품 순위 찾기
+      const hashieProduct = allProductsRes.data.find(p => p.brand_name === '하시에');
+      if (hashieProduct) {
+        setHashieRank(hashieProduct.ranking);
+      } else {
+        setHashieRank(null);
+      }
+      
       setLoading(false);
     } catch (error) {
       console.error('데이터 로딩 오류:', error);
@@ -60,6 +73,12 @@ function App() {
             <div className="stat-label">수집 횟수</div>
             <div className="stat-value">{stats?.total_collections || 0}</div>
           </div>
+          <div className="stat-item hashie-rank">
+            <div className="stat-label">🎯 하시에 순위</div>
+            <div className="stat-value">
+              {hashieRank ? `${hashieRank}위` : '순위 없음'}
+            </div>
+          </div>
         </div>
       </header>
 
@@ -70,10 +89,16 @@ function App() {
           <h2>TOP 10 제품</h2>
           <div className="product-list">
             {products.map((product, index) => (
-              <div key={product.product_id} className="product-item">
+              <div 
+                key={product.product_id} 
+                className={`product-item ${product.brand_name === '하시에' ? 'hashie-product' : ''}`}
+              >
                 <div className="product-rank">{index + 1}</div>
                 <div className="product-info">
-                  <div className="product-brand">{product.brand_name}</div>
+                  <div className="product-brand">
+                    {product.brand_name}
+                    {product.brand_name === '하시에' && <span className="hashie-badge"> 🎯 우리 제품</span>}
+                  </div>
                   <div className="product-name">{product.product_name}</div>
                   <div className="product-price">
                     ₩{product.price.toLocaleString()}
@@ -134,7 +159,7 @@ function App() {
       {/* 푸터 */}
       <footer className="footer">
         <div>마지막 업데이트: {stats?.latest_collection ? new Date(stats.latest_collection).toLocaleString('ko-KR') : '-'}</div>
-        <div>자동 새로고침: 1분마다</div>
+        <div>자동 새로고침: 30분마다</div>
       </footer>
     </div>
   );
