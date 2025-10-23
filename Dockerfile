@@ -12,6 +12,8 @@ RUN apt-get update && apt-get install -y \
     gnupg \
     ca-certificates \
     fonts-liberation \
+    fonts-noto-color-emoji \
+    fonts-unifont \
     libasound2 \
     libatk-bridge2.0-0 \
     libatk1.0-0 \
@@ -30,15 +32,18 @@ RUN apt-get update && apt-get install -y \
     libxkbcommon0 \
     libxrandr2 \
     xdg-utils \
+    libglib2.0-0 \
+    libnss3 \
+    libxshmfence1 \
+    libglu1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Python 의존성 복사 및 설치
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Playwright 브라우저 설치
+# Playwright 브라우저 설치 (install-deps 제거, 수동 설치 완료)
 RUN playwright install chromium
-RUN playwright install-deps chromium
 
 # 애플리케이션 코드 복사
 COPY . .
