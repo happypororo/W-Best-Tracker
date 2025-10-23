@@ -6,6 +6,22 @@ import './App.css';
 // API URL - 환경 변수 또는 기본값 사용
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://8000-is73bj77dclhgdm3vfpjp-2e77fc33.sandbox.novita.ai';
 
+// 서울 시간(KST) 포맷팅 함수
+const formatKST = (dateString) => {
+  if (!dateString) return '-';
+  const date = new Date(dateString);
+  return date.toLocaleString('ko-KR', { 
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+};
+
 function App() {
   const [products, setProducts] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
@@ -374,23 +390,21 @@ function App() {
                         제품 바로가기 →
                       </a>
                     )}
-                    {product.brand_name === '하시에' && (
-                      <button
-                        onClick={() => handleProductTrendClick(product)}
-                        style={{
-                          padding: '4px 10px',
-                          background: '#4CAF50',
-                          color: '#fff',
-                          fontSize: '11px',
-                          borderRadius: '4px',
-                          border: 'none',
-                          cursor: 'pointer',
-                          fontWeight: 'bold'
-                        }}
-                      >
-                        📊 가격/순위 변화
-                      </button>
-                    )}
+                    <button
+                      onClick={() => handleProductTrendClick(product)}
+                      style={{
+                        padding: '4px 10px',
+                        background: product.brand_name === '하시에' ? '#4CAF50' : '#2196F3',
+                        color: '#fff',
+                        fontSize: '11px',
+                        borderRadius: '4px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      📊 가격/순위 변화
+                    </button>
                   </div>
                 </div>
               </div>
@@ -702,7 +716,7 @@ function App() {
                       <div style={{fontSize: '14px', fontWeight: 'bold', marginBottom: '5px'}}>
                         {product.product_name}
                       </div>
-                      <div style={{fontSize: '16px', fontWeight: 'bold'}}>
+                      <div style={{fontSize: '16px', fontWeight: 'bold', marginBottom: '10px'}}>
                         ₩{product.price.toLocaleString()}
                         {product.discount_rate && (
                           <span style={{
@@ -717,6 +731,45 @@ function App() {
                             -{product.discount_rate}%
                           </span>
                         )}
+                      </div>
+                      <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
+                        {product.product_url && product.product_url !== 'N/A' && (
+                          <a 
+                            href={product.product_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            style={{
+                              display: 'inline-block',
+                              padding: '6px 12px',
+                              background: '#000',
+                              color: '#fff',
+                              fontSize: '12px',
+                              borderRadius: '4px',
+                              textDecoration: 'none',
+                              fontWeight: 'bold'
+                            }}
+                          >
+                            제품 바로가기 →
+                          </a>
+                        )}
+                        <button
+                          onClick={() => {
+                            setShowBrandProducts(false);
+                            handleProductTrendClick(product);
+                          }}
+                          style={{
+                            padding: '6px 12px',
+                            background: '#2196F3',
+                            color: '#fff',
+                            fontSize: '12px',
+                            borderRadius: '4px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontWeight: 'bold'
+                          }}
+                        >
+                          📊 가격/순위 변화
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -783,13 +836,13 @@ function App() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                   <XAxis 
                     dataKey="collected_at" 
-                    tickFormatter={(time) => new Date(time).toLocaleDateString('ko-KR', {month: 'short', day: 'numeric'})}
+                    tickFormatter={(time) => new Date(time).toLocaleDateString('ko-KR', {timeZone: 'Asia/Seoul', month: 'short', day: 'numeric'})}
                     tick={{fontSize: 11}}
                   />
                   <YAxis reversed domain={['auto', 'auto']} />
                   <Tooltip 
                     contentStyle={{backgroundColor: '#fff', border: '1px solid #ddd', color: '#000'}}
-                    labelFormatter={(time) => new Date(time).toLocaleString('ko-KR')}
+                    labelFormatter={(time) => formatKST(time)}
                     formatter={(value) => [value?.toFixed(1), '평균 순위']}
                   />
                   <Legend />
@@ -813,13 +866,13 @@ function App() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                   <XAxis 
                     dataKey="collected_at" 
-                    tickFormatter={(time) => new Date(time).toLocaleDateString('ko-KR', {month: 'short', day: 'numeric'})}
+                    tickFormatter={(time) => new Date(time).toLocaleDateString('ko-KR', {timeZone: 'Asia/Seoul', month: 'short', day: 'numeric'})}
                     tick={{fontSize: 11}}
                   />
                   <YAxis />
                   <Tooltip 
                     contentStyle={{backgroundColor: '#fff', border: '1px solid #ddd', color: '#000'}}
-                    labelFormatter={(time) => new Date(time).toLocaleString('ko-KR')}
+                    labelFormatter={(time) => formatKST(time)}
                     formatter={(value) => [value, '제품 수']}
                   />
                   <Legend />
@@ -932,13 +985,13 @@ function App() {
                       <CartesianGrid strokeDasharray="3 3" stroke="#ddd" />
                       <XAxis 
                         dataKey="collected_at" 
-                        tickFormatter={(time) => new Date(time).toLocaleDateString('ko-KR', {month: 'short', day: 'numeric'})}
+                        tickFormatter={(time) => new Date(time).toLocaleDateString('ko-KR', {timeZone: 'Asia/Seoul', month: 'short', day: 'numeric'})}
                         tick={{fontSize: 11, fill: '#000'}}
                       />
                       <YAxis reversed domain={['auto', 'auto']} tick={{fill: '#000'}} />
                       <Tooltip 
                         contentStyle={{backgroundColor: '#fff', border: '1px solid #ddd', color: '#000'}}
-                        labelFormatter={(time) => new Date(time).toLocaleString('ko-KR')}
+                        labelFormatter={(time) => formatKST(time)}
                         formatter={(value) => [value, '순위']}
                       />
                       <Legend />
@@ -962,13 +1015,13 @@ function App() {
                       <CartesianGrid strokeDasharray="3 3" stroke="#ddd" />
                       <XAxis 
                         dataKey="collected_at" 
-                        tickFormatter={(time) => new Date(time).toLocaleDateString('ko-KR', {month: 'short', day: 'numeric'})}
+                        tickFormatter={(time) => new Date(time).toLocaleDateString('ko-KR', {timeZone: 'Asia/Seoul', month: 'short', day: 'numeric'})}
                         tick={{fontSize: 11, fill: '#000'}}
                       />
                       <YAxis tick={{fill: '#000'}} />
                       <Tooltip 
                         contentStyle={{backgroundColor: '#fff', border: '1px solid #ddd', color: '#000'}}
-                        labelFormatter={(time) => new Date(time).toLocaleString('ko-KR')}
+                        labelFormatter={(time) => formatKST(time)}
                         formatter={(value) => [`₩${value?.toLocaleString()}`, '가격']}
                       />
                       <Legend />
@@ -1003,7 +1056,7 @@ function App() {
                 {categories.find(c => c.key === selectedCategory)?.name}
               </span>
               {' '}
-              {new Date(categoryUpdateTimes[selectedCategory].latest_collection).toLocaleString('ko-KR')}
+              {formatKST(categoryUpdateTimes[selectedCategory].latest_collection)}
               {' '}
               <span style={{color: '#888', fontSize: '12px'}}>
                 ({categoryUpdateTimes[selectedCategory].product_count}개 제품)
@@ -1011,7 +1064,7 @@ function App() {
             </>
           ) : selectedCategory === 'all' ? (
             <>
-              전체 카테고리 {stats?.latest_collection ? new Date(stats.latest_collection).toLocaleString('ko-KR') : '-'}
+              전체 카테고리 {formatKST(stats?.latest_collection)}
               {' '}
               <span style={{color: '#888', fontSize: '12px'}}>
                 ({Object.keys(categoryUpdateTimes).length}개 카테고리)
