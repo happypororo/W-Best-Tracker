@@ -28,8 +28,4 @@ services:
         value: true
       - key: LOG_LEVEL
         value: INFO
-    disk:
-      name: wconcept-data
-      mountPath: /opt/render/project/src
-      sizeGB: 1
     healthCheckPath: /api/health
