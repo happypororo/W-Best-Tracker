@@ -23,6 +23,9 @@ function App() {
   const [selectedBrandProducts, setSelectedBrandProducts] = useState(null);
   const [showBrandProducts, setShowBrandProducts] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [productTrend, setProductTrend] = useState(null);
+  const [showProductTrend, setShowProductTrend] = useState(false);
+  const [productTrendDays, setProductTrendDays] = useState(7);
 
   // localStorage에서 선택된 브랜드 불러오기
   useEffect(() => {
@@ -223,6 +226,20 @@ function App() {
     setShowBrandProducts(true);
   };
 
+  const handleProductTrendClick = async (product) => {
+    try {
+      const res = await axios.get(`${API_BASE}/api/trends/product/${product.product_id}?days=${productTrendDays}`);
+      setProductTrend({
+        product: product,
+        data: res.data.data
+      });
+      setShowProductTrend(true);
+    } catch (error) {
+      console.error('제품 트렌드 로딩 오류:', error);
+      alert('가격 변화 데이터를 불러올 수 없습니다.');
+    }
+  };
+
   // 필터링된 브랜드 통계
   const filteredBrands = selectedBrands.length > 0
     ? brands.filter(b => selectedBrands.includes(b.brand_name))
@@ -333,26 +350,44 @@ function App() {
                       <span className="discount"> -{product.discount_rate}%</span>
                     )}
                   </div>
-                  {product.product_url && (
-                    <a 
-                      href={product.product_url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      style={{
-                        display: 'inline-block',
-                        marginTop: '8px',
-                        padding: '4px 10px',
-                        background: '#000',
-                        color: '#fff',
-                        fontSize: '11px',
-                        borderRadius: '4px',
-                        textDecoration: 'none',
-                        fontWeight: 'bold'
-                      }}
-                    >
-                      제품 바로가기 →
-                    </a>
-                  )}
+                  <div style={{display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap'}}>
+                    {product.product_url && product.product_url !== 'N/A' && (
+                      <a 
+                        href={product.product_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'inline-block',
+                          padding: '4px 10px',
+                          background: '#000',
+                          color: '#fff',
+                          fontSize: '11px',
+                          borderRadius: '4px',
+                          textDecoration: 'none',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        제품 바로가기 →
+                      </a>
+                    )}
+                    {product.brand_name === '하시에' && (
+                      <button
+                        onClick={() => handleProductTrendClick(product)}
+                        style={{
+                          padding: '4px 10px',
+                          background: '#4CAF50',
+                          color: '#fff',
+                          fontSize: '11px',
+                          borderRadius: '4px',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        📊 가격/순위 변화
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -382,26 +417,42 @@ function App() {
                             <span className="discount"> -{product.discount_rate}%</span>
                           )}
                         </div>
-                        {product.product_url && (
-                          <a 
-                            href={product.product_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
+                        <div style={{display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap'}}>
+                          {product.product_url && product.product_url !== 'N/A' && (
+                            <a 
+                              href={product.product_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              style={{
+                                display: 'inline-block',
+                                padding: '4px 10px',
+                                background: '#000',
+                                color: '#fff',
+                                fontSize: '11px',
+                                borderRadius: '4px',
+                                textDecoration: 'none',
+                                fontWeight: 'bold'
+                              }}
+                            >
+                              제품 바로가기 →
+                            </a>
+                          )}
+                          <button
+                            onClick={() => handleProductTrendClick(product)}
                             style={{
-                              display: 'inline-block',
-                              marginTop: '8px',
                               padding: '4px 10px',
-                              background: '#000',
+                              background: '#4CAF50',
                               color: '#fff',
                               fontSize: '11px',
                               borderRadius: '4px',
-                              textDecoration: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
                               fontWeight: 'bold'
                             }}
                           >
-                            제품 바로가기 →
-                          </a>
-                        )}
+                            📊 가격/순위 변화
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -787,10 +838,161 @@ function App() {
         )}
       </div>
 
+      {/* 제품 가격/순위 변화 모달 */}
+      {showProductTrend && productTrend && (
+        <div 
+          className="modal-overlay"
+          onClick={() => setShowProductTrend(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1000
+          }}
+        >
+          <div 
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#fff',
+              border: '2px solid #000',
+              borderRadius: '8px',
+              padding: '30px',
+              maxWidth: '1000px',
+              maxHeight: '80vh',
+              overflow: 'auto',
+              width: '90%'
+            }}
+          >
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
+              <div>
+                <h2 style={{margin: 0, color: '#000'}}>
+                  📊 {productTrend.product.product_name}
+                </h2>
+                <p style={{margin: '5px 0', color: '#666', fontSize: '14px'}}>
+                  {productTrend.product.brand_name} | {productTrend.product.category}
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowProductTrend(false)}
+                style={{
+                  padding: '8px 16px',
+                  background: '#000',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                닫기 ✕
+              </button>
+            </div>
+
+            <div style={{marginBottom: '20px'}}>
+              <label style={{marginRight: '10px', color: '#000'}}>기간:</label>
+              <select 
+                value={productTrendDays}
+                onChange={(e) => {
+                  setProductTrendDays(Number(e.target.value));
+                  handleProductTrendClick(productTrend.product);
+                }}
+                style={{
+                  padding: '8px 12px',
+                  background: '#fff',
+                  color: '#000',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value={7}>최근 7일</option>
+                <option value={14}>최근 14일</option>
+                <option value={30}>최근 30일</option>
+              </select>
+            </div>
+
+            {productTrend.data && productTrend.data.length > 0 ? (
+              <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px'}}>
+                {/* 순위 변화 차트 */}
+                <div>
+                  <h3 style={{textAlign: 'center', marginBottom: '10px', color: '#000'}}>순위 변화</h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={productTrend.data}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#ddd" />
+                      <XAxis 
+                        dataKey="collected_at" 
+                        tickFormatter={(time) => new Date(time).toLocaleDateString('ko-KR', {month: 'short', day: 'numeric'})}
+                        tick={{fontSize: 11, fill: '#000'}}
+                      />
+                      <YAxis reversed domain={['auto', 'auto']} tick={{fill: '#000'}} />
+                      <Tooltip 
+                        contentStyle={{backgroundColor: '#fff', border: '1px solid #ddd', color: '#000'}}
+                        labelFormatter={(time) => new Date(time).toLocaleString('ko-KR')}
+                        formatter={(value) => [value, '순위']}
+                      />
+                      <Legend />
+                      <Line 
+                        type="monotone" 
+                        dataKey="ranking" 
+                        stroke="#2196F3" 
+                        strokeWidth={2}
+                        name="순위"
+                        dot={{r: 4}}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* 가격 변화 차트 */}
+                <div>
+                  <h3 style={{textAlign: 'center', marginBottom: '10px', color: '#000'}}>가격 변화</h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={productTrend.data}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#ddd" />
+                      <XAxis 
+                        dataKey="collected_at" 
+                        tickFormatter={(time) => new Date(time).toLocaleDateString('ko-KR', {month: 'short', day: 'numeric'})}
+                        tick={{fontSize: 11, fill: '#000'}}
+                      />
+                      <YAxis tick={{fill: '#000'}} />
+                      <Tooltip 
+                        contentStyle={{backgroundColor: '#fff', border: '1px solid #ddd', color: '#000'}}
+                        labelFormatter={(time) => new Date(time).toLocaleString('ko-KR')}
+                        formatter={(value) => [`₩${value?.toLocaleString()}`, '가격']}
+                      />
+                      <Legend />
+                      <Line 
+                        type="monotone" 
+                        dataKey="sale_price" 
+                        stroke="#4CAF50" 
+                        strokeWidth={2}
+                        name="판매가"
+                        dot={{r: 4}}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            ) : (
+              <div style={{textAlign: 'center', padding: '40px', color: '#888'}}>
+                이 제품의 가격/순위 변화 데이터가 없습니다.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* 푸터 */}
       <footer className="footer">
         <div>마지막 업데이트: {stats?.latest_collection ? new Date(stats.latest_collection).toLocaleString('ko-KR') : '-'}</div>
-        <div>자동 새로고침: 30분마다</div>
+        <div>자동 업데이트: 매 시간 16분</div>
       </footer>
     </div>
   );

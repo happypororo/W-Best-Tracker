@@ -173,35 +173,38 @@ class WConceptScraper:
         img_elem = elem.select_one('img')
         image_url = img_elem.get('src') or img_elem.get('data-src') if img_elem else "N/A"
         
-        # 상품 링크 (area-click 버튼에서 추출)
-        link_elem = elem.select_one('button.area-click')
-        product_url = "N/A"
-        
-        # 버튼에서 직접 URL을 가져올 수 없으므로 이미지 URL에서 ID 추출하여 구성
-        if not link_elem:
-            link_elem = elem.select_one('a')
-            if link_elem:
-                product_url = link_elem.get('href', "N/A")
-                if product_url and product_url != "N/A" and not product_url.startswith('http'):
-                    product_url = f"https://display.wconcept.co.kr{product_url}"
-        
-        # 상품 ID 추출 - 이미지 URL을 우선 사용
+        # 상품 ID 및 URL 추출
         product_id = None
+        product_url = "N/A"
         
         # 이미지 URL에서 상품 번호 추출 (예: 307602440_MA70111.jpg → 307602440)
         if image_url and image_url != "N/A":
             img_match = re.search(r'/(\d+)_[A-Z0-9]+\.jpg', image_url)
             if img_match:
-                product_id = f"PROD_{img_match.group(1)}"
+                product_num = img_match.group(1)
+                product_id = f"PROD_{product_num}"
+                # W Concept 제품 상세 URL 구성
+                product_url = f"https://www.wconcept.co.kr/Product/{product_num}"
         
-        # 이미지에서 실패하면 URL에서 시도
+        # 이미지에서 실패하면 다른 방법 시도
         if not product_id:
-            product_id = self._extract_product_id(product_url)
+            # a 태그에서 href 찾기
+            link_elem = elem.select_one('a')
+            if link_elem:
+                href = link_elem.get('href', "N/A")
+                if href and href != "N/A":
+                    if not href.startswith('http'):
+                        product_url = f"https://www.wconcept.co.kr{href}"
+                    else:
+                        product_url = href
+                    # URL에서 ID 추출
+                    product_id = self._extract_product_id(product_url)
         
         # 그래도 실패하면 rank와 브랜드/상품명 조합으로 고유 ID 생성
         if not product_id or product_id == "PROD_0":
             unique_str = f"{rank}_{brand_name}_{product_name}"
             product_id = f"PROD_{abs(hash(unique_str)) % 10000000:07d}"
+            # URL도 없으면 N/A로 유지
         
         return {
             'rank': rank,
