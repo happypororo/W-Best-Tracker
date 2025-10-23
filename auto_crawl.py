@@ -8,7 +8,7 @@ import asyncio
 import sys
 from datetime import datetime
 from wconcept_scraper_v2 import WConceptScraper
-from database import DatabaseManager
+from database import Database
 
 async def crawl_all_categories():
     """모든 카테고리 크롤링"""
@@ -32,9 +32,9 @@ async def crawl_all_categories():
     # 데이터베이스에 저장
     if all_products:
         print(f"\n💾 데이터베이스 저장 중... (총 {len(all_products)}개)")
-        db = DatabaseManager()
-        success_count = db.save_products(all_products)
-        print(f"✅ {success_count}개 제품 저장 완료!")
+        db = Database()
+        db.save_products(all_products)
+        print(f"✅ {len(all_products)}개 제품 저장 완료!")
     else:
         print("\n⚠️  수집된 제품이 없습니다.")
     
