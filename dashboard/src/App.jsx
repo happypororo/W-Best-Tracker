@@ -20,6 +20,9 @@ function App() {
   const [brandTrends, setBrandTrends] = useState({});
   const [selectedTrendBrand, setSelectedTrendBrand] = useState('하시에');
   const [trendDays, setTrendDays] = useState(7);
+  const [selectedBrandProducts, setSelectedBrandProducts] = useState(null);
+  const [showBrandProducts, setShowBrandProducts] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
   // localStorage에서 선택된 브랜드 불러오기
   useEffect(() => {
@@ -46,7 +49,7 @@ function App() {
     fetchData();
     const interval = setInterval(fetchData, 1800000); // 30분마다 갱신 (30분 = 1800000ms)
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedCategory]);
 
   // 브랜드 순위 동향 데이터 가져오기
   useEffect(() => {
@@ -69,10 +72,11 @@ function App() {
 
   const fetchData = async () => {
     try {
+      const categoryParam = selectedCategory !== 'all' ? `&category=${selectedCategory}` : '';
       const [productsRes, allProductsRes, brandsRes, statsRes, allBrandsRes] = await Promise.all([
-        axios.get(`${API_BASE}/api/products/current?limit=10`),
-        axios.get(`${API_BASE}/api/products/current?limit=200`),
-        axios.get(`${API_BASE}/api/brands/stats?limit=10`),
+        axios.get(`${API_BASE}/api/products/current?limit=10${categoryParam}`),
+        axios.get(`${API_BASE}/api/products/current?limit=200${categoryParam}`),
+        axios.get(`${API_BASE}/api/brands/stats?limit=20`),
         axios.get(`${API_BASE}/api/health`),
         axios.get(`${API_BASE}/api/brands/list`)
       ]);
@@ -119,6 +123,19 @@ function App() {
     setSelectedBrands([]);
   };
 
+  const selectAllBrands = () => {
+    setSelectedBrands([...allBrandsList]);
+  };
+
+  const handleBrandClick = (brandName) => {
+    const brandProducts = allProducts.filter(p => p.brand_name === brandName);
+    setSelectedBrandProducts({
+      brandName,
+      products: brandProducts
+    });
+    setShowBrandProducts(true);
+  };
+
   // 필터링된 브랜드 통계
   const filteredBrands = selectedBrands.length > 0
     ? brands.filter(b => selectedBrands.includes(b.brand_name))
@@ -132,11 +149,51 @@ function App() {
     );
   }
 
+  const categories = [
+    { key: 'all', name: '전체' },
+    { key: 'outer', name: '아우터' },
+    { key: 'dress', name: '원피스' },
+    { key: 'blouse', name: '블라우스' },
+    { key: 'shirt', name: '셔츠' },
+    { key: 'tshirt', name: '티셔츠' },
+    { key: 'knit', name: '니트' },
+    { key: 'skirt', name: '스커트' },
+    { key: 'underwear', name: '언더웨어' }
+  ];
+
   return (
     <div className="container">
       {/* 헤더 */}
       <header className="header">
         <h1>W CONCEPT 베스트 제품 추적</h1>
+        
+        {/* 카테고리 선택 */}
+        <div className="category-selector" style={{
+          display: 'flex',
+          gap: '10px',
+          marginBottom: '20px',
+          flexWrap: 'wrap'
+        }}>
+          {categories.map(cat => (
+            <button
+              key={cat.key}
+              onClick={() => setSelectedCategory(cat.key)}
+              style={{
+                padding: '8px 16px',
+                background: selectedCategory === cat.key ? '#fff' : '#2a2a2a',
+                color: selectedCategory === cat.key ? '#000' : '#fff',
+                border: selectedCategory === cat.key ? '2px solid #fff' : '1px solid #666',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: selectedCategory === cat.key ? 'bold' : 'normal',
+                transition: 'all 0.2s'
+              }}
+            >
+              {cat.name}
+            </button>
+          ))}
+        </div>
+
         <div className="stats-summary">
           <div className="stat-item">
             <div className="stat-label">총 제품</div>
@@ -260,9 +317,24 @@ function App() {
               maxHeight: '200px',
               overflowY: 'auto'
             }}>
-              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}>
+              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px', alignItems: 'center'}}>
                 <span style={{fontWeight: 'bold'}}>브랜드 선택:</span>
-                {selectedBrands.length > 0 && (
+                <div style={{display: 'flex', gap: '8px'}}>
+                  <button 
+                    onClick={selectAllBrands}
+                    style={{
+                      padding: '4px 12px',
+                      background: '#4CAF50',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    전체 선택
+                  </button>
                   <button 
                     onClick={clearBrandSelection}
                     style={{
@@ -272,12 +344,13 @@ function App() {
                       border: 'none',
                       borderRadius: '4px',
                       cursor: 'pointer',
-                      fontSize: '12px'
+                      fontSize: '12px',
+                      fontWeight: 'bold'
                     }}
                   >
                     전체 해제
                   </button>
-                )}
+                </div>
               </div>
               <div style={{display: 'flex', flexWrap: 'wrap', gap: '8px'}}>
                 {allBrandsList.map(brandName => (
@@ -343,8 +416,12 @@ function App() {
               </thead>
               <tbody>
                 {filteredBrands.map(brand => (
-                  <tr key={brand.brand_name}>
-                    <td>{brand.brand_name}</td>
+                  <tr 
+                    key={brand.brand_name}
+                    onClick={() => handleBrandClick(brand.brand_name)}
+                    style={{cursor: 'pointer'}}
+                  >
+                    <td style={{fontWeight: 'bold'}}>{brand.brand_name} 👉</td>
                     <td>{brand.product_count}</td>
                     <td>₩{Math.round(brand.avg_price).toLocaleString()}</td>
                     <td>{brand.avg_discount_rate ? `${brand.avg_discount_rate.toFixed(1)}%` : '-'}</td>
@@ -355,6 +432,113 @@ function App() {
           </div>
         </div>
       </div>
+
+      {/* 브랜드 제품 목록 모달 */}
+      {showBrandProducts && selectedBrandProducts && (
+        <div 
+          className="modal-overlay"
+          onClick={() => setShowBrandProducts(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1000
+          }}
+        >
+          <div 
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#000',
+              border: '2px solid #fff',
+              borderRadius: '8px',
+              padding: '30px',
+              maxWidth: '900px',
+              maxHeight: '80vh',
+              overflow: 'auto',
+              width: '90%'
+            }}
+          >
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
+              <h2 style={{margin: 0}}>
+                {selectedBrandProducts.brandName} 제품 목록
+                <span style={{fontSize: '14px', color: '#888', marginLeft: '10px'}}>
+                  (총 {selectedBrandProducts.products.length}개)
+                </span>
+              </h2>
+              <button 
+                onClick={() => setShowBrandProducts(false)}
+                style={{
+                  padding: '8px 16px',
+                  background: '#fff',
+                  color: '#000',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                닫기 ✕
+              </button>
+            </div>
+
+            <div className="product-list" style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
+              {selectedBrandProducts.products
+                .sort((a, b) => a.ranking - b.ranking)
+                .map(product => (
+                  <div 
+                    key={product.product_id} 
+                    className="product-item"
+                    style={{
+                      display: 'flex',
+                      gap: '15px',
+                      border: '1px solid #333',
+                      padding: '15px',
+                      background: '#0a0a0a'
+                    }}
+                  >
+                    <div className="product-rank" style={{
+                      fontSize: '18px',
+                      fontWeight: 'bold',
+                      minWidth: '50px',
+                      textAlign: 'center',
+                      borderRight: '1px solid #333',
+                      paddingRight: '15px'
+                    }}>
+                      #{product.ranking}
+                    </div>
+                    <div style={{flex: 1}}>
+                      <div style={{fontSize: '14px', fontWeight: 'bold', marginBottom: '5px'}}>
+                        {product.product_name}
+                      </div>
+                      <div style={{fontSize: '16px', fontWeight: 'bold'}}>
+                        ₩{product.price.toLocaleString()}
+                        {product.discount_rate && (
+                          <span style={{
+                            color: '#fff',
+                            background: '#000',
+                            border: '1px solid #fff',
+                            padding: '2px 8px',
+                            fontSize: '12px',
+                            marginLeft: '8px'
+                          }}>
+                            -{product.discount_rate}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 순위 동향 차트 섹션 */}
       <div className="section" style={{gridColumn: '1 / -1', marginTop: '40px'}}>
