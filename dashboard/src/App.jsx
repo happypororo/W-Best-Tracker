@@ -3,7 +3,8 @@ import axios from 'axios';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import './App.css';
 
-const API_BASE = 'https://8000-iner9p11l1qajaf54x3x7-5634da27.sandbox.novita.ai';
+// API URL - 환경 변수 또는 기본값 사용
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://8000-is73bj77dclhgdm3vfpjp-2e77fc33.sandbox.novita.ai';
 
 function App() {
   const [products, setProducts] = useState([]);

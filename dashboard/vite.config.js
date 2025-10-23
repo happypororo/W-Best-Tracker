@@ -9,10 +9,11 @@ export default defineConfig({
     port: 3000,
     strictPort: false,
     allowedHosts: [
-      '3000-iner9p11l1qajaf54x3x7-5634da27.sandbox.novita.ai',
-      '3001-iner9p11l1qajaf54x3x7-5634da27.sandbox.novita.ai',
-      '3002-iner9p11l1qajaf54x3x7-5634da27.sandbox.novita.ai',
-      '3003-iner9p11l1qajaf54x3x7-5634da27.sandbox.novita.ai'
+      '3000-is73bj77dclhgdm3vfpjp-2e77fc33.sandbox.novita.ai',
+      '3001-is73bj77dclhgdm3vfpjp-2e77fc33.sandbox.novita.ai',
+      '3002-is73bj77dclhgdm3vfpjp-2e77fc33.sandbox.novita.ai',
+      '3003-is73bj77dclhgdm3vfpjp-2e77fc33.sandbox.novita.ai',
+      '.sandbox.novita.ai'
     ]
   }
 })

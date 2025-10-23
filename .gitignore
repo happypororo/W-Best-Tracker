@@ -82,3 +82,16 @@ frontend/out/
 .cache/
 temp/
 tmp/
+
+# 데이터 파일
+wconcept_data_*.json
+wconcept_tracking.db
+wconcept_tracking.db-journal
+
+# 환경 변수
+dashboard/.env
+dashboard/.env.local
+dashboard/.env.production
+
+# 빌드 결과
+dashboard/dist
