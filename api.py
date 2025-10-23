@@ -239,38 +239,73 @@ async def get_current_products(
         with get_db_connection() as conn:
             cursor = conn.cursor()
             
-            # 최신 수집 시간 조회
-            cursor.execute("SELECT MAX(collected_at) FROM ranking_history")
-            latest_time = cursor.fetchone()[0]
-            
-            if not latest_time:
-                return []
+            # 카테고리별 최신 수집 시간을 사용하도록 개선
+            if category:
+                # 특정 카테고리의 최신 시간
+                cursor.execute("""
+                    SELECT MAX(rh.collected_at) 
+                    FROM ranking_history rh
+                    JOIN products p ON rh.product_id = p.product_id
+                    WHERE p.category_key = ?
+                """, (category,))
+                latest_time = cursor.fetchone()[0]
+            else:
+                # 전체 최신 시간 (하지만 카테고리별로 다를 수 있음)
+                latest_time = None
             
             # 제품 목록 조회
-            query = """
-                SELECT 
-                    p.product_id,
-                    p.brand_name,
-                    p.product_name,
-                    p.category,
-                    p.category_key,
-                    p.product_url,
-                    rh.sale_price as price,
-                    rh.discount_rate,
-                    p.image_url,
-                    rh.ranking,
-                    rh.collected_at
-                FROM products p
-                JOIN ranking_history rh ON p.product_id = rh.product_id
-                WHERE rh.collected_at = ?
-            """
-            params = [latest_time]
+            if latest_time:
+                # 특정 카테고리의 최신 데이터
+                query = """
+                    SELECT 
+                        p.product_id,
+                        p.brand_name,
+                        p.product_name,
+                        p.category,
+                        p.category_key,
+                        p.product_url,
+                        rh.sale_price as price,
+                        rh.discount_rate,
+                        p.image_url,
+                        rh.ranking,
+                        rh.collected_at
+                    FROM products p
+                    JOIN ranking_history rh ON p.product_id = rh.product_id
+                    WHERE rh.collected_at = ?
+                """
+                params = [latest_time]
+            else:
+                # 카테고리별 최신 데이터 모두 가져오기
+                query = """
+                    SELECT 
+                        p.product_id,
+                        p.brand_name,
+                        p.product_name,
+                        p.category,
+                        p.category_key,
+                        p.product_url,
+                        rh.sale_price as price,
+                        rh.discount_rate,
+                        p.image_url,
+                        rh.ranking,
+                        rh.collected_at
+                    FROM products p
+                    JOIN ranking_history rh ON p.product_id = rh.product_id
+                    JOIN (
+                        SELECT p2.category_key, MAX(rh2.collected_at) as max_time
+                        FROM products p2
+                        JOIN ranking_history rh2 ON p2.product_id = rh2.product_id
+                        GROUP BY p2.category_key
+                    ) latest ON p.category_key = latest.category_key AND rh.collected_at = latest.max_time
+                    WHERE 1=1
+                """
+                params = []
             
             if brand:
                 query += " AND p.brand_name = ?"
                 params.append(brand)
             
-            if category:
+            if category and not latest_time:
                 query += " AND p.category_key = ?"
                 params.append(category)
             
