@@ -581,7 +581,7 @@ function App() {
                 display: 'flex', 
                 flexWrap: 'wrap', 
                 gap: '8px',
-                maxHeight: '200px',
+                maxHeight: '400px',
                 overflowY: 'auto',
                 padding: '5px'
               }}>
