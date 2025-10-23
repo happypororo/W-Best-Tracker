@@ -7,7 +7,7 @@ echo "🚀 Starting W Concept Tracker Backend..."
 
 # 데이터베이스 초기화
 echo "📊 Initializing database..."
-python3 -c "from database import init_db; init_db()"
+python3 -c "from database import Database; db = Database('wconcept_tracking.db'); print('Database initialized')"
 
 # 스케줄러를 백그라운드에서 실행
 echo "⏰ Starting scheduler..."
