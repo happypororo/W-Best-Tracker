@@ -4,7 +4,7 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 import './App.css';
 
 // API URL - 환경 변수 또는 기본값 사용
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://8000-is73bj77dclhgdm3vfpjp-2e77fc33.sandbox.novita.ai';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://w-best-tracker.fly.dev';
 
 // 서울 시간(KST) 포맷팅 함수
 const formatKST = (dateString) => {
