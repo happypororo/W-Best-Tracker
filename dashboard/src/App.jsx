@@ -44,6 +44,7 @@ function App() {
   const [showProductTrend, setShowProductTrend] = useState(false);
   const [productTrendDays, setProductTrendDays] = useState(7);
   const [categoryUpdateTimes, setCategoryUpdateTimes] = useState({});
+  const [brandSearchQuery, setBrandSearchQuery] = useState('');
 
   // localStorage에서 선택된 브랜드 불러오기
   useEffect(() => {
@@ -511,9 +512,7 @@ function App() {
               background: '#f5f5f5',
               padding: '15px',
               borderRadius: '8px',
-              marginBottom: '20px',
-              maxHeight: '200px',
-              overflowY: 'auto'
+              marginBottom: '20px'
             }}>
               <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px', alignItems: 'center'}}>
                 <span style={{fontWeight: 'bold'}}>브랜드 선택:</span>
@@ -550,8 +549,45 @@ function App() {
                   </button>
                 </div>
               </div>
-              <div style={{display: 'flex', flexWrap: 'wrap', gap: '8px'}}>
-                {allBrandsList.map(brandName => (
+              
+              {/* 브랜드 검색창 */}
+              <div style={{marginBottom: '12px'}}>
+                <input
+                  type="text"
+                  placeholder="🔍 브랜드 검색..."
+                  value={brandSearchQuery}
+                  onChange={(e) => setBrandSearchQuery(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    border: '2px solid #ddd',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    outline: 'none',
+                    transition: 'border-color 0.2s',
+                    boxSizing: 'border-box'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#2196F3'}
+                  onBlur={(e) => e.target.style.borderColor = '#ddd'}
+                />
+                {brandSearchQuery && (
+                  <div style={{marginTop: '6px', fontSize: '12px', color: '#666'}}>
+                    검색 결과: {allBrandsList.filter(b => b.toLowerCase().includes(brandSearchQuery.toLowerCase())).length}개
+                  </div>
+                )}
+              </div>
+              
+              <div style={{
+                display: 'flex', 
+                flexWrap: 'wrap', 
+                gap: '8px',
+                maxHeight: '200px',
+                overflowY: 'auto',
+                padding: '5px'
+              }}>
+                {allBrandsList
+                  .filter(brandName => brandName.toLowerCase().includes(brandSearchQuery.toLowerCase()))
+                  .map(brandName => (
                   <label 
                     key={brandName}
                     style={{
