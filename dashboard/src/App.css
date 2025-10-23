@@ -7,8 +7,8 @@
 
 body {
   font-family: 'Segoe UI', 'Malgun Gothic', sans-serif;
-  background-color: #000;
-  color: #fff;
+  background-color: #fff;
+  color: #000;
 }
 
 .container {
@@ -19,7 +19,7 @@ body {
 
 /* 헤더 */
 .header {
-  border-bottom: 2px solid #fff;
+  border-bottom: 2px solid #000;
   padding-bottom: 20px;
   margin-bottom: 30px;
 }
@@ -38,13 +38,14 @@ body {
 
 .stat-item {
   flex: 1;
-  border: 1px solid #fff;
+  border: 1px solid #000;
   padding: 15px;
 }
 
 .stat-item.hashie-rank {
-  border: 2px solid #fff;
-  background-color: #0a0a0a;
+  border: 3px solid #000;
+  background-color: #ffeb3b;
+  box-shadow: 0 0 20px rgba(255, 235, 59, 0.5);
 }
 
 .stat-label {
@@ -80,15 +81,16 @@ body {
 }
 
 .section {
-  border: 1px solid #fff;
+  border: 1px solid #000;
   padding: 20px;
+  background-color: #fff;
 }
 
 .section h2 {
   font-size: 18px;
   font-weight: 700;
   margin-bottom: 20px;
-  border-bottom: 1px solid #fff;
+  border-bottom: 1px solid #000;
   padding-bottom: 10px;
 }
 
@@ -102,39 +104,53 @@ body {
 .product-item {
   display: flex;
   gap: 15px;
-  border: 1px solid #333;
+  border: 1px solid #ddd;
   padding: 15px;
   transition: all 0.2s;
+  background-color: #fff;
 }
 
 .product-item:hover {
-  background-color: #111;
+  background-color: #f5f5f5;
 }
 
 /* 하시에 제품 강조 */
 .product-item.hashie-product {
-  border: 2px solid #fff;
-  background-color: #0a0a0a;
-  box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+  border: 3px solid #000;
+  background: linear-gradient(135deg, #ffeb3b 0%, #ffd700 100%);
+  box-shadow: 0 0 20px rgba(255, 235, 59, 0.6);
+  font-weight: 700;
 }
 
 .product-item.hashie-product:hover {
-  background-color: #1a1a1a;
+  background: linear-gradient(135deg, #ffd700 0%, #ffeb3b 100%);
+  transform: scale(1.02);
 }
 
 .hashie-badge {
   font-size: 13px;
   font-weight: 700;
-  border: 1px solid #fff;
+  border: 2px solid #000;
+  background-color: #fff;
   padding: 2px 8px;
   margin-left: 8px;
+  border-radius: 4px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
 }
 
 /* 하시에 별도 섹션 */
 .hashie-separate-section {
   margin-top: 30px;
   padding-top: 20px;
-  border-top: 2px solid #fff;
+  border-top: 3px solid #000;
+  background: linear-gradient(to bottom, #ffeb3b 0%, #fff 20%);
+  padding: 20px;
+  border-radius: 8px;
 }
 
 .hashie-separate-section h3 {
@@ -142,16 +158,20 @@ body {
   font-weight: 700;
   margin-bottom: 15px;
   padding: 10px;
-  background-color: #0a0a0a;
-  border: 2px solid #fff;
+  background-color: #000;
+  color: #ffeb3b;
+  border: 3px solid #000;
+  text-align: center;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
 }
 
 .hashie-all-in-top10 {
   padding: 20px;
   text-align: center;
   font-size: 14px;
-  border: 1px solid #333;
-  background-color: #0a0a0a;
+  border: 2px solid #000;
+  background-color: #ffeb3b;
+  font-weight: 700;
 }
 
 .product-rank {
@@ -159,7 +179,7 @@ body {
   font-weight: 700;
   min-width: 40px;
   text-align: center;
-  border-right: 1px solid #333;
+  border-right: 1px solid #ddd;
   padding-right: 15px;
 }
 
@@ -187,16 +207,17 @@ body {
 
 .discount {
   color: #fff;
-  background-color: #000;
-  border: 1px solid #fff;
+  background-color: #f44336;
+  border: 1px solid #d32f2f;
   padding: 2px 8px;
   font-size: 12px;
   margin-left: 8px;
+  border-radius: 4px;
 }
 
 /* 차트 */
 .chart-container {
-  background-color: #000;
+  background-color: #fff;
   padding: 20px 0;
 }
 
@@ -214,23 +235,23 @@ body {
 .brand-table td {
   text-align: left;
   padding: 12px 10px;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid #ddd;
   font-size: 13px;
 }
 
 .brand-table th {
   font-weight: 700;
-  background-color: #111;
-  border-bottom: 2px solid #fff;
+  background-color: #f5f5f5;
+  border-bottom: 2px solid #000;
 }
 
 .brand-table tr:hover {
-  background-color: #111;
+  background-color: #f5f5f5;
 }
 
 /* 푸터 */
 .footer {
-  border-top: 1px solid #fff;
+  border-top: 1px solid #000;
   padding-top: 20px;
   display: flex;
   justify-content: space-between;
@@ -255,13 +276,13 @@ body {
 }
 
 .brand-filter {
-  background: #1a1a1a;
+  background: #f5f5f5;
   padding: 15px;
   border-radius: 8px;
   margin-bottom: 20px;
   max-height: 200px;
   overflow-y: auto;
-  border: 1px solid #333;
+  border: 1px solid #ddd;
 }
 
 .brand-filter::-webkit-scrollbar {
@@ -269,16 +290,16 @@ body {
 }
 
 .brand-filter::-webkit-scrollbar-track {
-  background: #0a0a0a;
+  background: #e0e0e0;
 }
 
 .brand-filter::-webkit-scrollbar-thumb {
-  background: #333;
+  background: #999;
   border-radius: 4px;
 }
 
 .brand-filter::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: #666;
 }
 
 /* 반응형 */

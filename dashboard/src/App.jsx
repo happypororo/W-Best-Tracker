@@ -138,8 +138,16 @@ function App() {
       const uniqueBrands = [...new Set(allProductsRes.data.map(p => p.brand_name))].filter(b => b && b !== 'N/A').sort();
       setAllBrandsList(uniqueBrands);
       
-      // 하시에 제품 모두 찾기
-      const allHashieProducts = allProductsRes.data.filter(p => p.brand_name === '하시에');
+      // 하시에 제품 찾기 (카테고리 필터 적용)
+      let allHashieProducts;
+      if (selectedCategory === 'all') {
+        // 전체 카테고리 선택 시 모든 카테고리에서 하시에 제품 가져오기
+        const allCategoriesRes = await axios.get(`${API_BASE}/api/products/current?limit=2000`);
+        allHashieProducts = allCategoriesRes.data.filter(p => p.brand_name === '하시에');
+      } else {
+        // 특정 카테고리 선택 시 해당 카테고리의 하시에 제품만
+        allHashieProducts = allProductsRes.data.filter(p => p.brand_name === '하시에');
+      }
       setHashieProducts(allHashieProducts);
       
       // 가장 높은 순위 찾기
@@ -232,9 +240,9 @@ function App() {
               onClick={() => setSelectedCategory(cat.key)}
               style={{
                 padding: '8px 16px',
-                background: selectedCategory === cat.key ? '#fff' : '#2a2a2a',
-                color: selectedCategory === cat.key ? '#000' : '#fff',
-                border: selectedCategory === cat.key ? '2px solid #fff' : '1px solid #666',
+                background: selectedCategory === cat.key ? '#000' : '#fff',
+                color: selectedCategory === cat.key ? '#fff' : '#000',
+                border: selectedCategory === cat.key ? '2px solid #000' : '1px solid #ddd',
                 borderRadius: '4px',
                 cursor: 'pointer',
                 fontWeight: selectedCategory === cat.key ? 'bold' : 'normal',
@@ -347,9 +355,9 @@ function App() {
               className="filter-button"
               style={{
                 padding: '8px 16px',
-                background: '#fff',
-                color: '#000',
-                border: 'none',
+                background: '#000',
+                color: '#fff',
+                border: '2px solid #000',
                 borderRadius: '4px',
                 cursor: 'pointer',
                 fontWeight: 'bold'
@@ -362,7 +370,7 @@ function App() {
 
           {showBrandFilter && (
             <div className="brand-filter" style={{
-              background: '#1a1a1a',
+              background: '#f5f5f5',
               padding: '15px',
               borderRadius: '8px',
               marginBottom: '20px',
@@ -412,8 +420,9 @@ function App() {
                       display: 'flex',
                       alignItems: 'center',
                       padding: '6px 12px',
-                      background: selectedBrands.includes(brandName) ? '#fff' : '#2a2a2a',
-                      color: selectedBrands.includes(brandName) ? '#000' : '#fff',
+                      background: selectedBrands.includes(brandName) ? '#000' : '#fff',
+                      color: selectedBrands.includes(brandName) ? '#fff' : '#000',
+                      border: '1px solid #ddd',
                       borderRadius: '4px',
                       cursor: 'pointer',
                       fontSize: '13px',
@@ -436,14 +445,14 @@ function App() {
           <div className="chart-container">
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={filteredBrands}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                 <XAxis dataKey="brand_name" tick={{fontSize: 11}} angle={-45} textAnchor="end" height={100} />
                 <YAxis />
                 <Tooltip 
-                  contentStyle={{backgroundColor: '#000', border: '1px solid #333', color: '#fff'}}
-                  cursor={{fill: '#222'}}
+                  contentStyle={{backgroundColor: '#fff', border: '1px solid #ddd', color: '#000'}}
+                  cursor={{fill: '#f5f5f5'}}
                 />
-                <Bar dataKey="product_count" fill="#fff" />
+                <Bar dataKey="product_count" fill="#000" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -507,8 +516,8 @@ function App() {
             className="modal-content"
             onClick={(e) => e.stopPropagation()}
             style={{
-              background: '#000',
-              border: '2px solid #fff',
+              background: '#fff',
+              border: '2px solid #000',
               borderRadius: '8px',
               padding: '30px',
               maxWidth: '900px',
@@ -528,9 +537,9 @@ function App() {
                 onClick={() => setShowBrandProducts(false)}
                 style={{
                   padding: '8px 16px',
-                  background: '#fff',
-                  color: '#000',
-                  border: 'none',
+                  background: '#000',
+                  color: '#fff',
+                  border: '2px solid #000',
                   borderRadius: '4px',
                   cursor: 'pointer',
                   fontWeight: 'bold'
@@ -550,9 +559,9 @@ function App() {
                     style={{
                       display: 'flex',
                       gap: '15px',
-                      border: '1px solid #333',
+                      border: '1px solid #ddd',
                       padding: '15px',
-                      background: '#0a0a0a'
+                      background: '#fff'
                     }}
                   >
                     <div className="product-rank" style={{
@@ -560,7 +569,7 @@ function App() {
                       fontWeight: 'bold',
                       minWidth: '50px',
                       textAlign: 'center',
-                      borderRight: '1px solid #333',
+                      borderRight: '1px solid #ddd',
                       paddingRight: '15px'
                     }}>
                       #{product.ranking}
@@ -574,11 +583,12 @@ function App() {
                         {product.discount_rate && (
                           <span style={{
                             color: '#fff',
-                            background: '#000',
-                            border: '1px solid #fff',
+                            background: '#f44336',
+                            border: '1px solid #d32f2f',
                             padding: '2px 8px',
                             fontSize: '12px',
-                            marginLeft: '8px'
+                            marginLeft: '8px',
+                            borderRadius: '4px'
                           }}>
                             -{product.discount_rate}%
                           </span>
@@ -604,9 +614,9 @@ function App() {
               onChange={(e) => setSelectedTrendBrand(e.target.value)}
               style={{
                 padding: '8px 12px',
-                background: '#2a2a2a',
-                color: '#fff',
-                border: '1px solid #444',
+                background: '#fff',
+                color: '#000',
+                border: '1px solid #ddd',
                 borderRadius: '4px',
                 cursor: 'pointer'
               }}
@@ -625,9 +635,9 @@ function App() {
               onChange={(e) => setTrendDays(Number(e.target.value))}
               style={{
                 padding: '8px 12px',
-                background: '#2a2a2a',
-                color: '#fff',
-                border: '1px solid #444',
+                background: '#fff',
+                color: '#000',
+                border: '1px solid #ddd',
                 borderRadius: '4px',
                 cursor: 'pointer'
               }}
@@ -646,7 +656,7 @@ function App() {
               <h3 style={{textAlign: 'center', marginBottom: '10px'}}>평균 순위 변화</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={brandTrends[selectedTrendBrand]}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                   <XAxis 
                     dataKey="collected_at" 
                     tickFormatter={(time) => new Date(time).toLocaleDateString('ko-KR', {month: 'short', day: 'numeric'})}
@@ -654,7 +664,7 @@ function App() {
                   />
                   <YAxis reversed domain={['auto', 'auto']} />
                   <Tooltip 
-                    contentStyle={{backgroundColor: '#000', border: '1px solid #333', color: '#fff'}}
+                    contentStyle={{backgroundColor: '#fff', border: '1px solid #ddd', color: '#000'}}
                     labelFormatter={(time) => new Date(time).toLocaleString('ko-KR')}
                     formatter={(value) => [value?.toFixed(1), '평균 순위']}
                   />
@@ -662,7 +672,7 @@ function App() {
                   <Line 
                     type="monotone" 
                     dataKey="avg_ranking" 
-                    stroke="#8884d8" 
+                    stroke="#2196F3" 
                     strokeWidth={2}
                     name="평균 순위"
                     dot={{r: 4}}
@@ -676,7 +686,7 @@ function App() {
               <h3 style={{textAlign: 'center', marginBottom: '10px'}}>제품 수 변화</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={brandTrends[selectedTrendBrand]}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                   <XAxis 
                     dataKey="collected_at" 
                     tickFormatter={(time) => new Date(time).toLocaleDateString('ko-KR', {month: 'short', day: 'numeric'})}
@@ -684,7 +694,7 @@ function App() {
                   />
                   <YAxis />
                   <Tooltip 
-                    contentStyle={{backgroundColor: '#000', border: '1px solid #333', color: '#fff'}}
+                    contentStyle={{backgroundColor: '#fff', border: '1px solid #ddd', color: '#000'}}
                     labelFormatter={(time) => new Date(time).toLocaleString('ko-KR')}
                     formatter={(value) => [value, '제품 수']}
                   />
@@ -692,7 +702,7 @@ function App() {
                   <Line 
                     type="monotone" 
                     dataKey="product_count" 
-                    stroke="#82ca9d" 
+                    stroke="#4CAF50" 
                     strokeWidth={2}
                     name="제품 수"
                     dot={{r: 4}}
