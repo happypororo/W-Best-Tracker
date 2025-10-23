@@ -1,0 +1,74 @@
+# Docker 빌드 시 제외할 파일
+
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 로그
+*.log
+logs/
+
+# 데이터베이스 (새로 생성됨)
+*.db
+*.sqlite
+*.sqlite3
+
+# 문서
+*.md
+!README.md
+
+# 배포 설정 (다른 플랫폼)
+render.yaml
+railway.json
+Procfile
+nixpacks.toml
+runtime.txt
+RAILWAY_DEPLOYMENT.md
+RENDER_DEPLOYMENT.md
+
+# 테스트
+tests/
+test_*.py
+*_test.py
+
+# 크롤링 결과 (샘플 데이터)
+*.json
+*.html
+*.png
+!analysis_result.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 기타
+.DS_Store
+node_modules/
+dashboard/
