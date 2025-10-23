@@ -78,16 +78,61 @@ function App() {
   const fetchData = async () => {
     try {
       const categoryParam = selectedCategory !== 'all' ? `&category=${selectedCategory}` : '';
-      const [productsRes, allProductsRes, brandsRes, statsRes] = await Promise.all([
+      const [productsRes, allProductsRes, statsRes] = await Promise.all([
         axios.get(`${API_BASE}/api/products/current?limit=10${categoryParam}`),
         axios.get(`${API_BASE}/api/products/current?limit=200${categoryParam}`),
-        axios.get(`${API_BASE}/api/brands/stats?limit=20`),
         axios.get(`${API_BASE}/api/health`)
       ]);
       setProducts(productsRes.data);
       setAllProducts(allProductsRes.data);
-      setBrands(brandsRes.data);
       setStats(statsRes.data);
+      
+      // 현재 카테고리의 브랜드 통계 계산
+      const brandStatsMap = {};
+      allProductsRes.data.forEach(product => {
+        const brand = product.brand_name;
+        if (!brand || brand === 'N/A') return;
+        
+        if (!brandStatsMap[brand]) {
+          brandStatsMap[brand] = {
+            brand_name: brand,
+            product_count: 0,
+            total_price: 0,
+            total_discount: 0,
+            products_with_discount: 0,
+            rankings: []
+          };
+        }
+        
+        brandStatsMap[brand].product_count++;
+        brandStatsMap[brand].total_price += product.price;
+        brandStatsMap[brand].rankings.push(product.ranking);
+        
+        if (product.discount_rate) {
+          brandStatsMap[brand].total_discount += product.discount_rate;
+          brandStatsMap[brand].products_with_discount++;
+        }
+      });
+      
+      // 브랜드 통계 객체로 변환
+      const brandStatsArray = Object.values(brandStatsMap).map(stat => ({
+        brand_name: stat.brand_name,
+        product_count: stat.product_count,
+        avg_price: stat.total_price / stat.product_count,
+        avg_discount_rate: stat.products_with_discount > 0 
+          ? stat.total_discount / stat.products_with_discount 
+          : null,
+        min_ranking: Math.min(...stat.rankings),
+        max_ranking: Math.max(...stat.rankings),
+        total_value: stat.total_price,
+        last_updated: new Date().toISOString()
+      }));
+      
+      // 제품 수로 정렬
+      brandStatsArray.sort((a, b) => b.product_count - a.product_count);
+      
+      // Top 20만 저장
+      setBrands(brandStatsArray.slice(0, 20));
       
       // 현재 카테고리의 브랜드 목록 추출 (중복 제거)
       const uniqueBrands = [...new Set(allProductsRes.data.map(p => p.brand_name))].filter(b => b && b !== 'N/A').sort();
