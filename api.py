@@ -159,10 +159,13 @@ def row_to_dict(row: sqlite3.Row) -> Dict:
 
 
 def format_datetime(dt_str: Optional[str]) -> Optional[datetime]:
-    """문자열을 datetime 객체로 변환"""
+    """문자열을 datetime 객체로 변환 (UTC 타임존 명시)"""
     if not dt_str:
         return None
     try:
+        # 데이터베이스의 시간은 UTC이므로 명시적으로 +00:00 추가
+        if not dt_str.endswith('Z') and '+' not in dt_str:
+            dt_str = dt_str + '+00:00'
         return datetime.fromisoformat(dt_str.replace('Z', '+00:00'))
     except:
         return None
