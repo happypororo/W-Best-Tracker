@@ -176,7 +176,10 @@ async def root():
         "docs": "/api/docs",
         "endpoints": {
             "현재_순위": "/api/products/current",
+            "브랜드_목록": "/api/brands/list",
             "브랜드_통계": "/api/brands/stats",
+            "브랜드_순위동향": "/api/trends/brand/{brand_name}",
+            "제품_순위동향": "/api/trends/product/{product_id}",
             "제품_히스토리": "/api/products/{product_id}/history",
             "가격_변동": "/api/price-changes",
             "순위_변동": "/api/ranking-changes",
@@ -225,7 +228,8 @@ async def health_check():
 @app.get("/api/products/current", response_model=List[Product], tags=["Products"])
 async def get_current_products(
     limit: int = Query(200, ge=1, le=200, description="조회할 제품 수"),
-    brand: Optional[str] = Query(None, description="브랜드명 필터")
+    brand: Optional[str] = Query(None, description="브랜드명 필터"),
+    category: Optional[str] = Query(None, description="카테고리 필터")
 ):
     """현재 최신 순위의 제품 목록 조회"""
     try:
@@ -260,6 +264,10 @@ async def get_current_products(
                 query += " AND p.brand_name = ?"
                 params.append(brand)
             
+            if category:
+                query += " AND p.category_key = ?"
+                params.append(category)
+            
             query += " ORDER BY rh.ranking ASC LIMIT ?"
             params.append(limit)
             
@@ -283,6 +291,27 @@ async def get_current_products(
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch products: {str(e)}")
+
+
+@app.get("/api/brands/list", response_model=List[str], tags=["Brands"])
+async def get_all_brands():
+    """모든 브랜드 목록 조회"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT DISTINCT brand_name 
+                FROM products 
+                WHERE brand_name IS NOT NULL AND brand_name != 'N/A'
+                ORDER BY brand_name
+            """)
+            
+            rows = cursor.fetchall()
+            return [row['brand_name'] for row in rows]
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch brand list: {str(e)}")
 
 
 @app.get("/api/brands/stats", response_model=List[BrandStats], tags=["Brands"])
@@ -545,6 +574,115 @@ async def get_scraping_jobs(
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch job history: {str(e)}")
+
+
+@app.get("/api/trends/brand/{brand_name}", tags=["Trends"])
+async def get_brand_ranking_trend(
+    brand_name: str,
+    days: int = Query(7, ge=1, le=30, description="조회할 일수")
+):
+    """브랜드의 순위 동향 조회"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            since_date = (datetime.now() - timedelta(days=days)).isoformat()
+            
+            query = """
+                SELECT 
+                    bsh.collected_at,
+                    bsh.product_count,
+                    bsh.avg_ranking,
+                    bsh.avg_price,
+                    bsh.avg_discount_rate
+                FROM brand_stats_history bsh
+                WHERE bsh.brand_name = ?
+                AND bsh.collected_at >= ?
+                ORDER BY bsh.collected_at ASC
+            """
+            
+            cursor.execute(query, [brand_name, since_date])
+            rows = cursor.fetchall()
+            
+            trend_data = []
+            for row in rows:
+                trend_data.append({
+                    'collected_at': format_datetime(row['collected_at']),
+                    'product_count': row['product_count'],
+                    'avg_ranking': row['avg_ranking'],
+                    'avg_price': row['avg_price'],
+                    'avg_discount_rate': row['avg_discount_rate']
+                })
+            
+            return {
+                'brand_name': brand_name,
+                'period_days': days,
+                'data': trend_data
+            }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch brand trend: {str(e)}")
+
+
+@app.get("/api/trends/product/{product_id}", tags=["Trends"])
+async def get_product_ranking_trend(
+    product_id: str,
+    days: int = Query(7, ge=1, le=30, description="조회할 일수")
+):
+    """특정 제품의 순위 동향 조회"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            # 제품 정보 조회
+            cursor.execute("""
+                SELECT product_name, brand_name 
+                FROM products 
+                WHERE product_id = ?
+            """, [product_id])
+            
+            product_info = cursor.fetchone()
+            if not product_info:
+                raise HTTPException(status_code=404, detail=f"Product {product_id} not found")
+            
+            since_date = (datetime.now() - timedelta(days=days)).isoformat()
+            
+            query = """
+                SELECT 
+                    rh.collected_at,
+                    rh.ranking,
+                    rh.sale_price,
+                    rh.discount_rate
+                FROM ranking_history rh
+                WHERE rh.product_id = ?
+                AND rh.collected_at >= ?
+                ORDER BY rh.collected_at ASC
+            """
+            
+            cursor.execute(query, [product_id, since_date])
+            rows = cursor.fetchall()
+            
+            trend_data = []
+            for row in rows:
+                trend_data.append({
+                    'collected_at': format_datetime(row['collected_at']),
+                    'ranking': row['ranking'],
+                    'price': row['sale_price'],
+                    'discount_rate': row['discount_rate']
+                })
+            
+            return {
+                'product_id': product_id,
+                'product_name': product_info['product_name'],
+                'brand_name': product_info['brand_name'],
+                'period_days': days,
+                'data': trend_data
+            }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch product trend: {str(e)}")
 
 
 # ==================== Error Handlers ====================

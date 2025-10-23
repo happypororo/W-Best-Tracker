@@ -238,6 +238,49 @@ body {
   opacity: 0.7;
 }
 
+/* 브랜드 필터 스타일 */
+.filter-button {
+  padding: 8px 16px;
+  background: #fff;
+  color: #000;
+  border: none;
+  borderRadius: 4px;
+  cursor: pointer;
+  fontWeight: bold;
+  transition: all 0.2s;
+}
+
+.filter-button:hover {
+  background: #e0e0e0;
+}
+
+.brand-filter {
+  background: #1a1a1a;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #333;
+}
+
+.brand-filter::-webkit-scrollbar {
+  width: 8px;
+}
+
+.brand-filter::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+
+.brand-filter::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+
+.brand-filter::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
 /* 반응형 */
 @media (max-width: 1024px) {
   .content {

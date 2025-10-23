@@ -13,13 +13,17 @@ from apscheduler.triggers.interval import IntervalTrigger
 import time
 import signal
 
-from wconcept_scraper_v2 import WConceptScraper
+from wconcept_scraper_v2 import WConceptScraper, scrape_all_categories
 from database import Database
 
 class WConceptScheduler:
     """W컨셉 크롤링 스케줄러"""
     
-    def __init__(self):
+    def __init__(self, scrape_all=True):
+        """
+        Args:
+            scrape_all: True면 모든 카테고리 크롤링, False면 아우터만
+        """
         self.scheduler = BackgroundScheduler(
             timezone='Asia/Seoul',
             job_defaults={
@@ -28,7 +32,9 @@ class WConceptScheduler:
             }
         )
         self.db = Database()
-        self.scraper = WConceptScraper()
+        self.scrape_all = scrape_all
+        if not scrape_all:
+            self.scraper = WConceptScraper(category_key='outer')
         self.is_running = False
     
     def scheduled_scraping_job(self):
@@ -43,7 +49,13 @@ class WConceptScheduler:
         try:
             # 1. 크롤링 실행
             print("\n📡 크롤링 시작...")
-            products = asyncio.run(self.scraper.scrape(max_products=200))
+            
+            if self.scrape_all:
+                # 모든 카테고리 크롤링
+                products = asyncio.run(scrape_all_categories(max_products=200))
+            else:
+                # 단일 카테고리만 크롤링
+                products = asyncio.run(self.scraper.scrape(max_products=200))
             
             if not products:
                 raise Exception("수집된 상품이 없습니다.")
@@ -204,8 +216,8 @@ def main():
     else:
         mode = 'hourly'  # 기본값
     
-    # 스케줄러 생성 및 시작
-    scheduler = WConceptScheduler()
+    # 스케줄러 생성 및 시작 (기본: 모든 카테고리 크롤링)
+    scheduler = WConceptScheduler(scrape_all=True)
     
     # 모드별 설정
     if mode == 'hourly':

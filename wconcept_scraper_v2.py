@@ -14,16 +14,39 @@ import re
 class WConceptScraper:
     """W컨셉 베스트 상품 크롤러"""
     
-    def __init__(self):
-        self.url = "https://display.wconcept.co.kr/rn/best?displayCategoryType=10101&displaySubCategoryType=10101201&gnbType=Y"
+    # 카테고리 정의
+    CATEGORIES = {
+        'outer': {'name': '아우터', 'sub_category': '10101201'},
+        'dress': {'name': '원피스', 'sub_category': '10101202'},
+        'blouse': {'name': '블라우스', 'sub_category': '10101203'},
+        'shirt': {'name': '셔츠', 'sub_category': '10101204'},
+        'tshirt': {'name': '티셔츠', 'sub_category': '10101205'},
+        'knit': {'name': '니트', 'sub_category': '10101206'},
+        'skirt': {'name': '스커트', 'sub_category': '10101207'},
+        'underwear': {'name': '언더웨어', 'sub_category': '10101212'},
+    }
+    
+    def __init__(self, category_key='outer'):
+        """
+        Args:
+            category_key: 'outer', 'dress', 'blouse', 'shirt', 'tshirt', 'knit', 'skirt', 'underwear' 중 하나
+        """
+        if category_key not in self.CATEGORIES:
+            raise ValueError(f"Invalid category. Choose from: {list(self.CATEGORIES.keys())}")
+        
+        self.category_key = category_key
+        self.category_name = self.CATEGORIES[category_key]['name']
+        sub_category = self.CATEGORIES[category_key]['sub_category']
+        self.url = f"https://display.wconcept.co.kr/rn/best?displayCategoryType=10101&displaySubCategoryType={sub_category}&gnbType=Y"
         self.products = []
     
     async def scrape(self, max_products=200):
         """상품 데이터 크롤링"""
         
         print("=" * 70)
-        print("W컨셉 베스트 상품 크롤링 시작")
+        print(f"W컨셉 베스트 상품 크롤링 시작 - {self.category_name}")
         print("=" * 70)
+        print(f"📂 카테고리: {self.category_name} ({self.category_key})")
         print(f"🎯 목표: {max_products}개 상품 수집")
         print(f"🔗 URL: {self.url}")
         print()
@@ -185,6 +208,8 @@ class WConceptScraper:
             'product_id': product_id,
             'product_name': product_name,
             'brand_name': brand_name,
+            'category': self.category_name,
+            'category_key': self.category_key,
             'original_price': price_info['original_price'],
             'sale_price': price_info['sale_price'],
             'discount_rate': price_info['discount_rate'],
@@ -265,9 +290,11 @@ class WConceptScraper:
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         
         # JSON 파일로 저장
-        json_file = f'/home/user/webapp/wconcept_data_{timestamp}.json'
+        json_file = f'/home/user/webapp/wconcept_data_{self.category_key}_{timestamp}.json'
         with open(json_file, 'w', encoding='utf-8') as f:
             json.dump({
+                'category': self.category_name,
+                'category_key': self.category_key,
                 'collected_at': datetime.now().isoformat(),
                 'total_products': len(self.products),
                 'products': self.products
@@ -318,10 +345,47 @@ class WConceptScraper:
             print(f"   최대 할인율: {max(discount_rates)}%")
 
 
+async def scrape_all_categories(max_products=200):
+    """모든 카테고리 크롤링"""
+    all_products = []
+    
+    print("\n" + "=" * 70)
+    print("🚀 전체 카테고리 크롤링 시작")
+    print("=" * 70)
+    
+    for category_key in WConceptScraper.CATEGORIES.keys():
+        try:
+            print(f"\n{'='*70}")
+            scraper = WConceptScraper(category_key=category_key)
+            products = await scraper.scrape(max_products=max_products)
+            all_products.extend(products)
+            print(f"✅ {scraper.category_name}: {len(products)}개 상품 수집 완료")
+        except Exception as e:
+            print(f"❌ {category_key} 카테고리 크롤링 실패: {str(e)}")
+    
+    print(f"\n{'='*70}")
+    print(f"🎉 전체 크롤링 완료! 총 {len(all_products)}개 상품 수집")
+    print(f"{'='*70}")
+    
+    return all_products
+
+
 async def main():
     """메인 함수"""
-    scraper = WConceptScraper()
-    products = await scraper.scrape(max_products=200)
+    import sys
+    
+    # 명령행 인자로 카테고리 지정 가능
+    if len(sys.argv) > 1:
+        category_key = sys.argv[1]
+        if category_key == 'all':
+            products = await scrape_all_categories(max_products=200)
+        else:
+            scraper = WConceptScraper(category_key=category_key)
+            products = await scraper.scrape(max_products=200)
+    else:
+        # 기본: 아우터 카테고리만
+        scraper = WConceptScraper(category_key='outer')
+        products = await scraper.scrape(max_products=200)
     
     print(f"\n✅ 크롤링 완료! 총 {len(products)}개 상품 수집됨")
     
@@ -330,6 +394,7 @@ async def main():
         print("\n📦 샘플 상품 (첫 3개):")
         for product in products[:3]:
             print(f"\n   [{product['rank']}] {product['brand_name']} - {product['product_name'][:50]}")
+            print(f"       카테고리: {product['category']}")
             print(f"       가격: {product['sale_price']:,}원")
             if product['discount_rate']:
                 print(f"       할인: {product['discount_rate']}% OFF")

@@ -44,6 +44,8 @@ class Database:
                     product_id VARCHAR(100) UNIQUE NOT NULL,
                     product_name TEXT,
                     brand_name VARCHAR(200),
+                    category VARCHAR(50),
+                    category_key VARCHAR(50),
                     image_url TEXT,
                     product_url TEXT,
                     first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -183,11 +185,13 @@ class Database:
                 try:
                     # 1. 제품 기본 정보 저장/업데이트
                     cursor.execute("""
-                        INSERT INTO products (product_id, product_name, brand_name, image_url, product_url, last_seen, updated_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        INSERT INTO products (product_id, product_name, brand_name, category, category_key, image_url, product_url, last_seen, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                         ON CONFLICT(product_id) DO UPDATE SET
                             product_name = excluded.product_name,
                             brand_name = excluded.brand_name,
+                            category = excluded.category,
+                            category_key = excluded.category_key,
                             image_url = excluded.image_url,
                             product_url = excluded.product_url,
                             last_seen = excluded.last_seen,
@@ -196,6 +200,8 @@ class Database:
                         product['product_id'],
                         product['product_name'],
                         product['brand_name'],
+                        product.get('category', 'N/A'),
+                        product.get('category_key', 'unknown'),
                         product['image_url'],
                         product['product_url'],
                         collected_at,
