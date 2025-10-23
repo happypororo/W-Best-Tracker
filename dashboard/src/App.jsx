@@ -110,6 +110,34 @@ function App() {
               </div>
             ))}
           </div>
+
+          {/* 하시에 제품이 TOP 10 밖에 있을 때 별도 표시 */}
+          {hashieRank && hashieRank > 10 && allProducts.find(p => p.brand_name === '하시에') && (
+            <div className="hashie-separate-section">
+              <h3>🎯 우리 제품 (하시에)</h3>
+              {(() => {
+                const hashieProduct = allProducts.find(p => p.brand_name === '하시에');
+                return (
+                  <div className="product-item hashie-product">
+                    <div className="product-rank">{hashieProduct.ranking}</div>
+                    <div className="product-info">
+                      <div className="product-brand">
+                        {hashieProduct.brand_name}
+                        <span className="hashie-badge"> 🎯 우리 제품</span>
+                      </div>
+                      <div className="product-name">{hashieProduct.product_name}</div>
+                      <div className="product-price">
+                        ₩{hashieProduct.price.toLocaleString()}
+                        {hashieProduct.discount_rate && (
+                          <span className="discount"> -{hashieProduct.discount_rate}%</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
         </div>
 
         {/* 오른쪽: 브랜드 통계 */}

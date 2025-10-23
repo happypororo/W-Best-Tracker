@@ -124,6 +124,22 @@ body {
   margin-left: 8px;
 }
 
+/* 하시에 별도 섹션 */
+.hashie-separate-section {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 2px solid #fff;
+}
+
+.hashie-separate-section h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 15px;
+  padding: 10px;
+  background-color: #0a0a0a;
+  border: 2px solid #fff;
+}
+
 .product-rank {
   font-size: 24px;
   font-weight: 700;
