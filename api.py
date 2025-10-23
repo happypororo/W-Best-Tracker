@@ -781,10 +781,13 @@ async def trigger_crawl():
     import os
     
     try:
+        # 현재 디렉토리 확인
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        
         # auto_crawl.py 실행
         result = subprocess.run(
-            ['python3', 'auto_crawl.py'],
-            cwd='/app',  # Fly.io 컨테이너에서는 /app
+            ['python3', os.path.join(current_dir, 'auto_crawl.py')],
+            cwd=current_dir,
             capture_output=True,
             text=True,
             timeout=600  # 10분 타임아웃
