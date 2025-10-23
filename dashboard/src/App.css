@@ -44,8 +44,8 @@ body {
 
 .stat-item.hashie-rank {
   border: 3px solid #000;
-  background-color: #ffeb3b;
-  box-shadow: 0 0 20px rgba(255, 235, 59, 0.5);
+  background-color: #fff9c4;
+  box-shadow: 0 0 20px rgba(255, 249, 196, 0.6);
 }
 
 .stat-label {
@@ -117,13 +117,13 @@ body {
 /* 하시에 제품 강조 */
 .product-item.hashie-product {
   border: 3px solid #000;
-  background: linear-gradient(135deg, #ffeb3b 0%, #ffd700 100%);
-  box-shadow: 0 0 20px rgba(255, 235, 59, 0.6);
+  background-color: #fff9c4;
+  box-shadow: 0 0 20px rgba(255, 249, 196, 0.6);
   font-weight: 700;
 }
 
 .product-item.hashie-product:hover {
-  background: linear-gradient(135deg, #ffd700 0%, #ffeb3b 100%);
+  background-color: #fff59d;
   transform: scale(1.02);
 }
 
@@ -148,7 +148,7 @@ body {
   margin-top: 30px;
   padding-top: 20px;
   border-top: 3px solid #000;
-  background: linear-gradient(to bottom, #ffeb3b 0%, #fff 20%);
+  background-color: #fffde7;
   padding: 20px;
   border-radius: 8px;
 }
@@ -159,7 +159,7 @@ body {
   margin-bottom: 15px;
   padding: 10px;
   background-color: #000;
-  color: #ffeb3b;
+  color: #fff9c4;
   border: 3px solid #000;
   text-align: center;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
@@ -170,7 +170,7 @@ body {
   text-align: center;
   font-size: 14px;
   border: 2px solid #000;
-  background-color: #ffeb3b;
+  background-color: #fff9c4;
   font-weight: 700;
 }
 

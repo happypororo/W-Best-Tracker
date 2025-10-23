@@ -61,6 +61,9 @@ class Product(BaseModel):
     product_id: str
     brand_name: str
     product_name: str
+    category: Optional[str] = None
+    category_key: Optional[str] = None
+    product_url: Optional[str] = None
     price: int
     discount_rate: Optional[float] = None
     image_url: str
@@ -227,7 +230,7 @@ async def health_check():
 
 @app.get("/api/products/current", response_model=List[Product], tags=["Products"])
 async def get_current_products(
-    limit: int = Query(200, ge=1, le=200, description="조회할 제품 수"),
+    limit: int = Query(10000, ge=1, le=10000, description="조회할 제품 수"),
     brand: Optional[str] = Query(None, description="브랜드명 필터"),
     category: Optional[str] = Query(None, description="카테고리 필터")
 ):
@@ -249,6 +252,9 @@ async def get_current_products(
                     p.product_id,
                     p.brand_name,
                     p.product_name,
+                    p.category,
+                    p.category_key,
+                    p.product_url,
                     rh.sale_price as price,
                     rh.discount_rate,
                     p.image_url,
@@ -280,6 +286,9 @@ async def get_current_products(
                     product_id=row['product_id'],
                     brand_name=row['brand_name'],
                     product_name=row['product_name'],
+                    category=row['category'],
+                    category_key=row['category_key'],
+                    product_url=row['product_url'],
                     price=row['price'],
                     discount_rate=row['discount_rate'],
                     image_url=row['image_url'],

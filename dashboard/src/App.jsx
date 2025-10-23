@@ -51,9 +51,36 @@ function App() {
     fetchData();
   }, [selectedCategory]);
 
+  // 매 시간 16분에 자동 업데이트
   useEffect(() => {
-    const interval = setInterval(fetchData, 1800000); // 30분마다 갱신 (30분 = 1800000ms)
-    return () => clearInterval(interval);
+    const scheduleNextUpdate = () => {
+      const now = new Date();
+      const targetMinute = 16;
+      const currentMinute = now.getMinutes();
+      const currentHour = now.getHours();
+      
+      let nextUpdate;
+      if (currentMinute < targetMinute) {
+        // 이번 시간 16분
+        nextUpdate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), currentHour, targetMinute, 0);
+      } else {
+        // 다음 시간 16분
+        nextUpdate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), currentHour + 1, targetMinute, 0);
+      }
+      
+      const delay = nextUpdate.getTime() - now.getTime();
+      console.log(`다음 업데이트: ${nextUpdate.toLocaleString('ko-KR')} (${Math.round(delay/1000/60)}분 후)`);
+      
+      const timeout = setTimeout(() => {
+        fetchData();
+        scheduleNextUpdate(); // 다음 업데이트 예약
+      }, delay);
+      
+      return timeout;
+    };
+    
+    const timeout = scheduleNextUpdate();
+    return () => clearTimeout(timeout);
   }, []);
 
   // 브랜드 순위 동향 데이터 가져오기
@@ -141,8 +168,8 @@ function App() {
       // 하시에 제품 찾기 (카테고리 필터 적용)
       let allHashieProducts;
       if (selectedCategory === 'all') {
-        // 전체 카테고리 선택 시 모든 카테고리에서 하시에 제품 가져오기
-        const allCategoriesRes = await axios.get(`${API_BASE}/api/products/current?limit=2000`);
+        // 전체 카테고리 선택 시 모든 제품에서 하시에 제품 가져오기
+        const allCategoriesRes = await axios.get(`${API_BASE}/api/products/current?limit=10000`);
         allHashieProducts = allCategoriesRes.data.filter(p => p.brand_name === '하시에');
       } else {
         // 특정 카테고리 선택 시 해당 카테고리의 하시에 제품만
@@ -297,6 +324,7 @@ function App() {
                   <div className="product-brand">
                     {product.brand_name}
                     {product.brand_name === '하시에' && <span className="hashie-badge"> 🎯 우리 제품</span>}
+                    {product.category && <span style={{fontSize: '11px', marginLeft: '8px', color: '#666'}}>({product.category})</span>}
                   </div>
                   <div className="product-name">{product.product_name}</div>
                   <div className="product-price">
@@ -305,6 +333,26 @@ function App() {
                       <span className="discount"> -{product.discount_rate}%</span>
                     )}
                   </div>
+                  {product.product_url && (
+                    <a 
+                      href={product.product_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{
+                        display: 'inline-block',
+                        marginTop: '8px',
+                        padding: '4px 10px',
+                        background: '#000',
+                        color: '#fff',
+                        fontSize: '11px',
+                        borderRadius: '4px',
+                        textDecoration: 'none',
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      제품 바로가기 →
+                    </a>
+                  )}
                 </div>
               </div>
             ))}
@@ -325,6 +373,7 @@ function App() {
                         <div className="product-brand">
                           {product.brand_name}
                           <span className="hashie-badge"> 🎯 우리 제품</span>
+                          {product.category && <span style={{fontSize: '11px', marginLeft: '8px', color: '#333'}}>({product.category})</span>}
                         </div>
                         <div className="product-name">{product.product_name}</div>
                         <div className="product-price">
@@ -333,6 +382,26 @@ function App() {
                             <span className="discount"> -{product.discount_rate}%</span>
                           )}
                         </div>
+                        {product.product_url && (
+                          <a 
+                            href={product.product_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            style={{
+                              display: 'inline-block',
+                              marginTop: '8px',
+                              padding: '4px 10px',
+                              background: '#000',
+                              color: '#fff',
+                              fontSize: '11px',
+                              borderRadius: '4px',
+                              textDecoration: 'none',
+                              fontWeight: 'bold'
+                            }}
+                          >
+                            제품 바로가기 →
+                          </a>
+                        )}
                       </div>
                     </div>
                   ))}
