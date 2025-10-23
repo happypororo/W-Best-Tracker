@@ -27,6 +27,7 @@ function App() {
   const [productTrend, setProductTrend] = useState(null);
   const [showProductTrend, setShowProductTrend] = useState(false);
   const [productTrendDays, setProductTrendDays] = useState(7);
+  const [categoryUpdateTimes, setCategoryUpdateTimes] = useState({});
 
   // localStorage에서 선택된 브랜드 불러오기
   useEffect(() => {
@@ -109,14 +110,16 @@ function App() {
   const fetchData = async () => {
     try {
       const categoryParam = selectedCategory !== 'all' ? `&category=${selectedCategory}` : '';
-      const [productsRes, allProductsRes, statsRes] = await Promise.all([
+      const [productsRes, allProductsRes, statsRes, categoryTimesRes] = await Promise.all([
         axios.get(`${API_BASE}/api/products/current?limit=10${categoryParam}`),
         axios.get(`${API_BASE}/api/products/current?limit=200${categoryParam}`),
-        axios.get(`${API_BASE}/api/health`)
+        axios.get(`${API_BASE}/api/health`),
+        axios.get(`${API_BASE}/api/categories/update-times`)
       ]);
       setProducts(productsRes.data);
       setAllProducts(allProductsRes.data);
       setStats(statsRes.data);
+      setCategoryUpdateTimes(categoryTimesRes.data.categories || {});
       
       // 현재 카테고리의 브랜드 통계 계산
       const brandStatsMap = {};
@@ -992,7 +995,30 @@ function App() {
 
       {/* 푸터 */}
       <footer className="footer">
-        <div>마지막 업데이트: {stats?.latest_collection ? new Date(stats.latest_collection).toLocaleString('ko-KR') : '-'}</div>
+        <div>
+          <strong>마지막 업데이트:</strong>{' '}
+          {selectedCategory !== 'all' && categoryUpdateTimes[selectedCategory] ? (
+            <>
+              <span style={{color: '#4CAF50', fontWeight: 'bold'}}>
+                {categories.find(c => c.key === selectedCategory)?.name}
+              </span>
+              {' '}
+              {new Date(categoryUpdateTimes[selectedCategory].latest_collection).toLocaleString('ko-KR')}
+              {' '}
+              <span style={{color: '#888', fontSize: '12px'}}>
+                ({categoryUpdateTimes[selectedCategory].product_count}개 제품)
+              </span>
+            </>
+          ) : selectedCategory === 'all' ? (
+            <>
+              전체 카테고리 {stats?.latest_collection ? new Date(stats.latest_collection).toLocaleString('ko-KR') : '-'}
+              {' '}
+              <span style={{color: '#888', fontSize: '12px'}}>
+                ({Object.keys(categoryUpdateTimes).length}개 카테고리)
+              </span>
+            </>
+          ) : '-'}
+        </div>
         <div>자동 업데이트: 매 시간 16분</div>
       </footer>
     </div>

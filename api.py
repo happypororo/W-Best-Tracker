@@ -228,6 +228,48 @@ async def health_check():
         raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")
 
 
+@app.get("/api/categories/update-times", tags=["System"])
+async def get_category_update_times():
+    """카테고리별 최신 수집 시간 조회"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            # 카테고리별 최신 수집 시간 조회
+            query = """
+                SELECT 
+                    p.category_key,
+                    p.category,
+                    MAX(rh.collected_at) as latest_collection,
+                    COUNT(DISTINCT rh.product_id) as product_count
+                FROM products p
+                JOIN ranking_history rh ON p.product_id = rh.product_id
+                WHERE p.category_key IS NOT NULL
+                GROUP BY p.category_key, p.category
+                ORDER BY p.category_key
+            """
+            
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            
+            category_times = {}
+            for row in rows:
+                category_times[row['category_key']] = {
+                    'category_key': row['category_key'],
+                    'category_name': row['category'],
+                    'latest_collection': format_datetime(row['latest_collection']),
+                    'product_count': row['product_count']
+                }
+            
+            return {
+                'status': 'success',
+                'categories': category_times
+            }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch category update times: {str(e)}")
+
+
 @app.get("/api/products/current", response_model=List[Product], tags=["Products"])
 async def get_current_products(
     limit: int = Query(10000, ge=1, le=10000, description="조회할 제품 수"),
