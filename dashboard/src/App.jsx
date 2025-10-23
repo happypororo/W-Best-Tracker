@@ -46,10 +46,15 @@ function App() {
   }, [selectedBrands]);
 
   useEffect(() => {
+    // 카테고리 변경 시 선택된 브랜드 초기화
+    setSelectedBrands([]);
     fetchData();
+  }, [selectedCategory]);
+
+  useEffect(() => {
     const interval = setInterval(fetchData, 1800000); // 30분마다 갱신 (30분 = 1800000ms)
     return () => clearInterval(interval);
-  }, [selectedCategory]);
+  }, []);
 
   // 브랜드 순위 동향 데이터 가져오기
   useEffect(() => {
@@ -73,18 +78,20 @@ function App() {
   const fetchData = async () => {
     try {
       const categoryParam = selectedCategory !== 'all' ? `&category=${selectedCategory}` : '';
-      const [productsRes, allProductsRes, brandsRes, statsRes, allBrandsRes] = await Promise.all([
+      const [productsRes, allProductsRes, brandsRes, statsRes] = await Promise.all([
         axios.get(`${API_BASE}/api/products/current?limit=10${categoryParam}`),
         axios.get(`${API_BASE}/api/products/current?limit=200${categoryParam}`),
         axios.get(`${API_BASE}/api/brands/stats?limit=20`),
-        axios.get(`${API_BASE}/api/health`),
-        axios.get(`${API_BASE}/api/brands/list`)
+        axios.get(`${API_BASE}/api/health`)
       ]);
       setProducts(productsRes.data);
       setAllProducts(allProductsRes.data);
       setBrands(brandsRes.data);
       setStats(statsRes.data);
-      setAllBrandsList(allBrandsRes.data);
+      
+      // 현재 카테고리의 브랜드 목록 추출 (중복 제거)
+      const uniqueBrands = [...new Set(allProductsRes.data.map(p => p.brand_name))].filter(b => b && b !== 'N/A').sort();
+      setAllBrandsList(uniqueBrands);
       
       // 하시에 제품 모두 찾기
       const allHashieProducts = allProductsRes.data.filter(p => p.brand_name === '하시에');
