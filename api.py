@@ -774,6 +774,42 @@ async def get_product_ranking_trend(
         raise HTTPException(status_code=500, detail=f"Failed to fetch product trend: {str(e)}")
 
 
+@app.post("/api/crawl/trigger", tags=["Admin"])
+async def trigger_crawl():
+    """수동으로 크롤링 트리거 (관리자용)"""
+    import subprocess
+    import os
+    
+    try:
+        # auto_crawl.py 실행
+        result = subprocess.run(
+            ['python3', 'auto_crawl.py'],
+            cwd='/app',  # Fly.io 컨테이너에서는 /app
+            capture_output=True,
+            text=True,
+            timeout=600  # 10분 타임아웃
+        )
+        
+        if result.returncode == 0:
+            return {
+                'status': 'success',
+                'message': 'Crawling completed successfully',
+                'stdout': result.stdout[-1000:] if len(result.stdout) > 1000 else result.stdout  # 마지막 1000자만
+            }
+        else:
+            return {
+                'status': 'error',
+                'message': 'Crawling failed',
+                'returncode': result.returncode,
+                'stderr': result.stderr[-1000:] if len(result.stderr) > 1000 else result.stderr
+            }
+    
+    except subprocess.TimeoutExpired:
+        raise HTTPException(status_code=504, detail="Crawling timeout (exceeded 10 minutes)")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to trigger crawl: {str(e)}")
+
+
 # ==================== Error Handlers ====================
 
 @app.exception_handler(404)
