@@ -12,6 +12,8 @@ function App() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [hashieRank, setHashieRank] = useState(null);
+  const [hashieProducts, setHashieProducts] = useState([]);
+  const [hashieInTop10, setHashieInTop10] = useState(0);
 
   useEffect(() => {
     fetchData();
@@ -32,13 +34,21 @@ function App() {
       setBrands(brandsRes.data);
       setStats(statsRes.data);
       
-      // 하시에 제품 순위 찾기
-      const hashieProduct = allProductsRes.data.find(p => p.brand_name === '하시에');
-      if (hashieProduct) {
-        setHashieRank(hashieProduct.ranking);
+      // 하시에 제품 모두 찾기
+      const allHashieProducts = allProductsRes.data.filter(p => p.brand_name === '하시에');
+      setHashieProducts(allHashieProducts);
+      
+      // 가장 높은 순위 찾기
+      if (allHashieProducts.length > 0) {
+        const topHashieRank = Math.min(...allHashieProducts.map(p => p.ranking));
+        setHashieRank(topHashieRank);
       } else {
         setHashieRank(null);
       }
+      
+      // TOP 10에 포함된 하시에 제품 수
+      const inTop10 = allHashieProducts.filter(p => p.ranking <= 10).length;
+      setHashieInTop10(inTop10);
       
       setLoading(false);
     } catch (error) {
@@ -74,10 +84,15 @@ function App() {
             <div className="stat-value">{stats?.total_collections || 0}</div>
           </div>
           <div className="stat-item hashie-rank">
-            <div className="stat-label">🎯 하시에 순위</div>
+            <div className="stat-label">🎯 하시에 (5개)</div>
             <div className="stat-value">
-              {hashieRank ? `${hashieRank}위` : '순위 없음'}
+              {hashieRank ? `최고 ${hashieRank}위` : '순위 없음'}
             </div>
+            {hashieProducts.length > 0 && (
+              <div className="stat-detail">
+                TOP 10: {hashieInTop10}개
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -111,31 +126,38 @@ function App() {
             ))}
           </div>
 
-          {/* 하시에 제품이 TOP 10 밖에 있을 때 별도 표시 */}
-          {hashieRank && hashieRank > 10 && allProducts.find(p => p.brand_name === '하시에') && (
+          {/* 하시에 제품 전체 표시 (TOP 10 밖) */}
+          {hashieProducts.length > 0 && (
             <div className="hashie-separate-section">
-              <h3>🎯 우리 제품 (하시에)</h3>
-              {(() => {
-                const hashieProduct = allProducts.find(p => p.brand_name === '하시에');
-                return (
-                  <div className="product-item hashie-product">
-                    <div className="product-rank">{hashieProduct.ranking}</div>
-                    <div className="product-info">
-                      <div className="product-brand">
-                        {hashieProduct.brand_name}
-                        <span className="hashie-badge"> 🎯 우리 제품</span>
-                      </div>
-                      <div className="product-name">{hashieProduct.product_name}</div>
-                      <div className="product-price">
-                        ₩{hashieProduct.price.toLocaleString()}
-                        {hashieProduct.discount_rate && (
-                          <span className="discount"> -{hashieProduct.discount_rate}%</span>
-                        )}
+              <h3>🎯 우리 제품 (하시에) - 총 {hashieProducts.length}개</h3>
+              <div className="product-list">
+                {hashieProducts
+                  .filter(p => p.ranking > 10) // TOP 10 밖의 제품만
+                  .sort((a, b) => a.ranking - b.ranking) // 순위순 정렬
+                  .map(product => (
+                    <div key={product.product_id} className="product-item hashie-product">
+                      <div className="product-rank">{product.ranking}</div>
+                      <div className="product-info">
+                        <div className="product-brand">
+                          {product.brand_name}
+                          <span className="hashie-badge"> 🎯 우리 제품</span>
+                        </div>
+                        <div className="product-name">{product.product_name}</div>
+                        <div className="product-price">
+                          ₩{product.price.toLocaleString()}
+                          {product.discount_rate && (
+                            <span className="discount"> -{product.discount_rate}%</span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })()}
+                  ))}
+              </div>
+              {hashieProducts.filter(p => p.ranking > 10).length === 0 && (
+                <div className="hashie-all-in-top10">
+                  ✅ 모든 하시에 제품이 TOP 10에 포함되어 있습니다!
+                </div>
+              )}
             </div>
           )}
         </div>

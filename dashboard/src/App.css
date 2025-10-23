@@ -58,6 +58,12 @@ body {
   font-weight: 700;
 }
 
+.stat-detail {
+  font-size: 11px;
+  opacity: 0.6;
+  margin-top: 5px;
+}
+
 /* 로딩 */
 .loading {
   text-align: center;
@@ -138,6 +144,14 @@ body {
   padding: 10px;
   background-color: #0a0a0a;
   border: 2px solid #fff;
+}
+
+.hashie-all-in-top10 {
+  padding: 20px;
+  text-align: center;
+  font-size: 14px;
+  border: 1px solid #333;
+  background-color: #0a0a0a;
 }
 
 .product-rank {
