@@ -9,11 +9,15 @@ from datetime import datetime
 from typing import List, Dict, Optional, Tuple
 from contextlib import contextmanager
 import json
+import os
 
 class Database:
     """데이터베이스 관리 클래스"""
     
-    def __init__(self, db_path: str = "wconcept_tracking.db"):
+    def __init__(self, db_path: str = None):
+        # 환경변수에서 DB 경로를 가져오거나 기본값 사용
+        if db_path is None:
+            db_path = os.environ.get('DB_PATH', 'wconcept_tracking.db')
         self.db_path = db_path
         self.init_database()
     

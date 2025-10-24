@@ -799,43 +799,31 @@ async def get_product_ranking_trend(
         raise HTTPException(status_code=500, detail=f"Failed to fetch product trend: {str(e)}")
 
 
-@app.post("/api/crawl/trigger", tags=["Admin"])
-async def trigger_crawl():
-    """수동으로 크롤링 트리거 (관리자용)"""
-    import subprocess
-    import os
-    
+@app.get("/api/crawl/status", tags=["Admin"])
+async def crawl_status():
+    """크롤링 상태 정보 (읽기 전용)"""
     try:
-        # 현재 디렉토리 확인
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        
-        # auto_crawl.py 실행
-        result = subprocess.run(
-            ['python3', os.path.join(current_dir, 'auto_crawl.py')],
-            cwd=current_dir,
-            capture_output=True,
-            text=True,
-            timeout=600  # 10분 타임아웃
-        )
-        
-        if result.returncode == 0:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            # 최근 수집 시간
+            cursor.execute("SELECT MAX(collected_at) FROM ranking_history")
+            latest_collection = cursor.fetchone()[0]
+            
+            # 총 수집 횟수
+            cursor.execute("SELECT COUNT(DISTINCT collected_at) FROM ranking_history")
+            total_collections = cursor.fetchone()[0]
+            
             return {
-                'status': 'success',
-                'message': 'Crawling completed successfully',
-                'stdout': result.stdout[-1000:] if len(result.stdout) > 1000 else result.stdout  # 마지막 1000자만
-            }
-        else:
-            return {
-                'status': 'error',
-                'message': 'Crawling failed',
-                'returncode': result.returncode,
-                'stderr': result.stderr[-1000:] if len(result.stderr) > 1000 else result.stderr
+                'status': 'read_only',
+                'message': 'Crawling is handled by GitHub Actions',
+                'latest_collection': format_datetime(latest_collection),
+                'total_collections': total_collections,
+                'info': 'Automatic crawling runs daily at 15:16 KST via GitHub Actions'
             }
     
-    except subprocess.TimeoutExpired:
-        raise HTTPException(status_code=504, detail="Crawling timeout (exceeded 10 minutes)")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to trigger crawl: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get crawl status: {str(e)}")
 
 
 # ==================== Error Handlers ====================
