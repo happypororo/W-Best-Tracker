@@ -1,0 +1,58 @@
+name: Scheduled Crawl and Deploy
+
+on:
+  schedule:
+    # 매시간 20분 (UTC 기준)
+    # UTC 11:20 = KST 20:20
+    # UTC 12:20 = KST 21:20
+    - cron: '20 * * * *'
+  workflow_dispatch:  # 수동 실행 가능
+
+jobs:
+  crawl-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 🔄 Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: 📦 Install dependencies
+        run: |
+          pip install playwright beautifulsoup4 requests
+          playwright install chromium --with-deps
+      
+      - name: 🕷️ Run crawling
+        run: |
+          python3 auto_crawl.py
+        env:
+          PYTHONUNBUFFERED: '1'
+      
+      - name: 📊 Check DB file
+        run: |
+          ls -lh wconcept_tracking.db
+          echo "DB file size: $(du -h wconcept_tracking.db | cut -f1)"
+      
+      - name: 💾 Commit updated DB
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add wconcept_tracking.db
+          
+          # 변경사항이 있을 때만 커밋
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            TIMESTAMP=$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M:%S KST')
+            git commit -m "chore: Update crawl data - $TIMESTAMP"
+            git push
+            echo "✅ DB updated and pushed"
+          fi
+      
+      # Fly.io는 main 브랜치 push로 자동 재배포됨!

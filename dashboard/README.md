@@ -7,6 +7,7 @@ React + Vite 기반의 W컨셉 베스트 상품 트래커 대시보드
 - 브랜드별 필터링
 - 카테고리별 조회
 - 순위 변동 추이 분석
+- 자동 데이터 업데이트 (매시간 :20분)
 
 ## Tech Stack
 - React 19
@@ -16,3 +17,8 @@ React + Vite 기반의 W컨셉 베스트 상품 트래커 대시보드
 
 ## API
 Backend: https://w-best-tracker.fly.dev
+
+## Deployment
+- Frontend: Cloudflare Pages
+- Backend: Fly.io
+- Auto-deploy: GitHub Actions
