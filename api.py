@@ -151,6 +151,20 @@ class HealthStatus(BaseModel):
     api_version: str
 
 
+class BatchHistoryRequest(BaseModel):
+    """배치 히스토리 요청 모델"""
+    product_ids: List[str]
+    days: int = 2
+
+
+class ProductHistoryItem(BaseModel):
+    """제품 히스토리 아이템"""
+    collected_at: datetime
+    ranking: int
+    price: int
+    discount_rate: Optional[float] = None
+
+
 # ==================== Helper Functions ====================
 
 def row_to_dict(row: sqlite3.Row) -> Dict:
@@ -858,6 +872,63 @@ async def startup_event():
     print(f"📖 ReDoc: http://localhost:8000/api/redoc")
     print(f"💾 Database: {DB_PATH}")
     print("=" * 50)
+
+
+@app.post("/api/products/batch/history", tags=["Products"])
+async def get_batch_product_history(request: BatchHistoryRequest):
+    """여러 제품의 히스토리를 한 번에 조회 (배치 처리)"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            results = {}
+            since_date = (datetime.now() - timedelta(days=request.days)).isoformat()
+            
+            # 모든 제품의 히스토리를 한 번의 쿼리로 조회
+            placeholders = ','.join(['?' for _ in request.product_ids])
+            query = f"""
+                SELECT 
+                    product_id,
+                    collected_at,
+                    ranking,
+                    sale_price as price,
+                    discount_rate
+                FROM ranking_history
+                WHERE product_id IN ({placeholders})
+                AND collected_at >= ?
+                ORDER BY product_id, collected_at DESC
+            """
+            
+            params = request.product_ids + [since_date]
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+            
+            # 제품별로 그룹화
+            for row in rows:
+                product_id = row['product_id']
+                if product_id not in results:
+                    results[product_id] = []
+                
+                results[product_id].append({
+                    'collected_at': format_datetime(row['collected_at']),
+                    'ranking': row['ranking'],
+                    'price': row['price'],
+                    'discount_rate': row['discount_rate']
+                })
+            
+            # 요청한 모든 제품에 대해 빈 배열이라도 반환
+            for product_id in request.product_ids:
+                if product_id not in results:
+                    results[product_id] = []
+            
+            return {
+                'success': True,
+                'count': len(request.product_ids),
+                'data': results
+            }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch batch history: {str(e)}")
 
 
 @app.on_event("shutdown")
