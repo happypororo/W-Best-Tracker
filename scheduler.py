@@ -10,9 +10,9 @@ from datetime import datetime, timedelta
 import time
 
 def get_next_run_time():
-    """다음 실행 시간 계산 (매 시간 16분)"""
+    """다음 실행 시간 계산 (매 시간 20분)"""
     now = datetime.now()
-    target_minute = 16
+    target_minute = 20
     
     if now.minute < target_minute:
         # 이번 시간 16분
@@ -63,7 +63,7 @@ def run_crawl():
 def main():
     """메인 스케줄러 루프"""
     print("🔔 W Concept 크롤링 스케줄러 시작")
-    print("⏰ 실행 시간: 매 시간 16분")
+    print("⏰ 실행 시간: 매 시간 20분 (W컨셉 업데이트 :15 + 5분 버퍼)")
     print("=" * 80 + "\n")
     
     while True:

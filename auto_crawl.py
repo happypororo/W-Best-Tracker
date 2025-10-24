@@ -6,14 +6,14 @@ W Concept 자동 크롤링 스크립트
 
 import asyncio
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from wconcept_scraper_v2 import WConceptScraper
 from database import Database
 
 async def crawl_all_categories():
     """모든 카테고리 크롤링"""
     print("\n" + "=" * 80)
-    print(f"🚀 자동 크롤링 시작: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"🚀 자동 크롤링 시작: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC")
     print("=" * 80 + "\n")
     
     categories = ['outer', 'dress', 'blouse', 'shirt', 'tshirt', 'knit', 'skirt', 'underwear']
@@ -39,7 +39,7 @@ async def crawl_all_categories():
         print("\n⚠️  수집된 제품이 없습니다.")
     
     print("\n" + "=" * 80)
-    print(f"✅ 크롤링 완료: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"✅ 크롤링 완료: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC")
     print("=" * 80 + "\n")
 
 if __name__ == "__main__":

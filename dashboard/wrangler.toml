@@ -1,8 +1,6 @@
-name = "wconcept-dashboard"
-compatibility_date = "2024-01-01"
+name = "w-concept-tracker"
+compatibility_date = "2025-10-24"
+pages_build_output_dir = "dist"
 
 [site]
-bucket = "./dist"
-
-[env.production]
-name = "wconcept-dashboard"
+bucket = "dist"
