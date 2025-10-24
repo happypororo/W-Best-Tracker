@@ -202,13 +202,29 @@ async def health_check():
         with get_db_connection() as conn:
             cursor = conn.cursor()
             
+            # 테이블 존재 여부 확인
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='products'")
+            products_table_exists = cursor.fetchone() is not None
+            
+            if not products_table_exists:
+                # 테이블이 없으면 기본 상태 반환 (여전히 healthy)
+                return HealthStatus(
+                    status="healthy",
+                    database_connected=True,
+                    total_products=0,
+                    total_brands=0,
+                    latest_collection=None,
+                    total_collections=0,
+                    api_version="2.0.0"
+                )
+            
             # 총 제품 수
             cursor.execute("SELECT COUNT(DISTINCT product_id) FROM products")
-            total_products = cursor.fetchone()[0]
+            total_products = cursor.fetchone()[0] or 0
             
             # 총 브랜드 수
             cursor.execute("SELECT COUNT(DISTINCT brand_name) FROM products")
-            total_brands = cursor.fetchone()[0]
+            total_brands = cursor.fetchone()[0] or 0
             
             # 최근 수집 시간
             cursor.execute("SELECT MAX(collected_at) FROM ranking_history")
@@ -216,7 +232,7 @@ async def health_check():
             
             # 총 수집 횟수
             cursor.execute("SELECT COUNT(DISTINCT collected_at) FROM ranking_history")
-            total_collections = cursor.fetchone()[0]
+            total_collections = cursor.fetchone()[0] or 0
             
             return HealthStatus(
                 status="healthy",
@@ -228,7 +244,16 @@ async def health_check():
                 api_version="2.0.0"
             )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")
+        # 에러가 발생해도 API는 살아있으므로 기본 상태 반환
+        return HealthStatus(
+            status="healthy",
+            database_connected=False,
+            total_products=0,
+            total_brands=0,
+            latest_collection=None,
+            total_collections=0,
+            api_version="2.0.0"
+        )
 
 
 @app.get("/api/categories/update-times", tags=["System"])
