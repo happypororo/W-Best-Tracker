@@ -341,9 +341,9 @@ async def get_current_products(
                         rh.collected_at
                     FROM products p
                     JOIN ranking_history rh ON p.product_id = rh.product_id
-                    WHERE rh.collected_at = ?
+                    WHERE rh.collected_at = ? AND p.category_key = ?
                 """
-                params = [latest_time]
+                params = [latest_time, category]
             else:
                 # 카테고리별 최신 데이터 모두 가져오기
                 query = """
