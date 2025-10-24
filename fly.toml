@@ -27,11 +27,6 @@ primary_region = "sin"  # Singapore (한국과 가장 가까움)
   cpu_kind = 'shared'
   cpus = 1
 
-# 영구 데이터 저장을 위한 볼륨
-[mounts]
-  source = "wconcept_data"
-  destination = "/data"
-
 [[services]]
   protocol = "tcp"
   internal_port = 8000

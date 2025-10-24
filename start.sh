@@ -5,18 +5,21 @@
 
 echo "🚀 Starting W Concept Tracker Backend..."
 
-# 볼륨 디렉토리 확인 및 생성
-if [ -d "/data" ]; then
-    echo "📁 Using persistent volume at /data"
-    export DB_PATH="/data/wconcept_tracking.db"
+# 데이터베이스 경로 설정 (Git에서 배포된 파일 사용)
+export DB_PATH="./wconcept_tracking.db"
+echo "📁 Using database at: $DB_PATH"
+
+# 데이터베이스 파일 확인
+if [ -f "$DB_PATH" ]; then
+    echo "✅ Database file found"
+    ls -lh "$DB_PATH"
 else
-    echo "📁 Using local directory for database"
-    export DB_PATH="./wconcept_tracking.db"
+    echo "⚠️  Database file not found, will create new one"
 fi
 
 # 데이터베이스 초기화
-echo "📊 Initializing database at $DB_PATH..."
-python3 -c "import os; from database import Database; db = Database(os.environ.get('DB_PATH', 'wconcept_tracking.db')); print('Database initialized')"
+echo "📊 Initializing database..."
+python3 -c "from database import Database; db = Database(); print('Database initialized')"
 
 # API 서버만 실행 (스케줄러 제거)
 echo "🌐 Starting API server (read-only mode)..."
