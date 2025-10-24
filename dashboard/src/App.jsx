@@ -22,6 +22,50 @@ const formatKST = (dateString) => {
   });
 };
 
+// 순위 변동 표시 컴포넌트
+const RankingChangeBadge = ({ change, isNew }) => {
+  // NEW 배지 우선 표시
+  if (isNew) {
+    return (
+      <span style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        padding: '2px 8px',
+        borderRadius: '12px',
+        fontSize: '11px',
+        fontWeight: 'bold',
+        background: '#FFD700',
+        color: '#000',
+        marginLeft: '8px',
+        animation: 'pulse 2s infinite'
+      }}>
+        ✨ NEW
+      </span>
+    );
+  }
+  
+  if (!change) return null;
+  
+  const isUp = change.change_type === '상승' || change.change_type === 'up';
+  const diff = Math.abs(change.ranking_diff);
+  
+  return (
+    <span style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      padding: '2px 8px',
+      borderRadius: '12px',
+      fontSize: '11px',
+      fontWeight: 'bold',
+      background: isUp ? '#e8f5e9' : '#ffebee',
+      color: isUp ? '#2e7d32' : '#c62828',
+      marginLeft: '8px'
+    }}>
+      {isUp ? '↑' : '↓'} {diff}
+    </span>
+  );
+};
+
 function App() {
   const [products, setProducts] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
@@ -47,6 +91,8 @@ function App() {
   const [brandSearchQuery, setBrandSearchQuery] = useState('');
   const [isCrawling, setIsCrawling] = useState(false);
   const [crawlMessage, setCrawlMessage] = useState('');
+  const [topProductLimit, setTopProductLimit] = useState(100);
+  const [rankingChanges, setRankingChanges] = useState({});
 
   // localStorage에서 선택된 브랜드 불러오기
   useEffect(() => {
@@ -73,13 +119,13 @@ function App() {
     // 카테고리 변경 시 선택된 브랜드 초기화
     setSelectedBrands([]);
     fetchData();
-  }, [selectedCategory]);
+  }, [selectedCategory, topProductLimit]);
 
-  // 매 시간 20분에 자동 업데이트
+  // 매 시간 16분에 자동 업데이트
   useEffect(() => {
     const scheduleNextUpdate = () => {
       const now = new Date();
-      const targetMinute = 20;
+      const targetMinute = 16;
       const currentMinute = now.getMinutes();
       const currentHour = now.getHours();
       
@@ -126,11 +172,58 @@ function App() {
     }
   };
 
+  // Export 함수
+  const exportToCSV = () => {
+    const csvData = products.map(product => ({
+      '순위': product.ranking,
+      '브랜드': product.brand_name,
+      '제품명': product.product_name,
+      '카테고리': product.category || '',
+      '가격': product.price,
+      '할인율': product.discount_rate ? `${product.discount_rate}%` : '',
+      '제품URL': product.product_url || '',
+      '수집시간': formatKST(product.collected_at)
+    }));
+
+    const headers = Object.keys(csvData[0]);
+    const csvContent = [
+      headers.join(','),
+      ...csvData.map(row => headers.map(header => `"${row[header]}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `wconcept_top${topProductLimit}_${new Date().toISOString().slice(0,10)}.csv`;
+    link.click();
+  };
+
+  const exportToJSON = () => {
+    const jsonData = products.map(product => ({
+      ranking: product.ranking,
+      brand_name: product.brand_name,
+      product_name: product.product_name,
+      category: product.category,
+      price: product.price,
+      discount_rate: product.discount_rate,
+      product_url: product.product_url,
+      image_url: product.image_url,
+      collected_at: product.collected_at,
+      ranking_change: rankingChanges[product.product_id] || null
+    }));
+
+    const blob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `wconcept_top${topProductLimit}_${new Date().toISOString().slice(0,10)}.json`;
+    link.click();
+  };
+
   const fetchData = async () => {
     try {
       const categoryParam = selectedCategory !== 'all' ? `&category=${selectedCategory}` : '';
       const [productsRes, allProductsRes, statsRes, categoryTimesRes] = await Promise.all([
-        axios.get(`${API_BASE}/api/products/current?limit=10${categoryParam}`),
+        axios.get(`${API_BASE}/api/products/current?limit=${topProductLimit}${categoryParam}`),
         axios.get(`${API_BASE}/api/products/current?limit=200${categoryParam}`),
         axios.get(`${API_BASE}/api/health`),
         axios.get(`${API_BASE}/api/categories/update-times`)
@@ -139,6 +232,93 @@ function App() {
       setAllProducts(allProductsRes.data);
       setStats(statsRes.data);
       setCategoryUpdateTimes(categoryTimesRes.data.categories || {});
+      
+      // 배치 API로 모든 제품의 히스토리를 한 번에 조회
+      const productsToTrack = [...productsRes.data];
+      
+      const changesMap = {};
+      const newProducts = new Set();
+      
+      console.log(`순위 변동 조회 시작 (배치 API - ${productsToTrack.length}개)...`);
+      const startTime = Date.now();
+      
+      try {
+        const batchHistoryRes = await axios.post(`${API_BASE}/api/products/batch/history`, {
+          product_ids: productsToTrack.map(p => p.product_id),
+          days: 2
+        });
+        
+        const histories = batchHistoryRes.data.data;
+        
+        // 각 제품의 히스토리 분석
+        for (const product of productsToTrack) {
+          const history = histories[product.product_id] || [];
+          
+          if (history.length === 0 || history.length === 1) {
+            newProducts.add(product.product_id);
+          } else if (history.length >= 2) {
+            const current = history[0];
+            const previous = history[1];
+            
+            if (current.ranking !== previous.ranking) {
+              const diff = previous.ranking - current.ranking;
+              changesMap[product.product_id] = {
+                old_ranking: previous.ranking,
+                new_ranking: current.ranking,
+                ranking_diff: diff,
+                change_type: diff > 0 ? 'up' : 'down'
+              };
+            }
+          }
+        }
+        
+        const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(2);
+        console.log(`✅ 순위 변동 조회 완료: ${elapsedTime}초 (배치 API)`);
+        console.log('순위 변동 개수:', Object.keys(changesMap).length);
+        console.log('신규 제품 개수:', newProducts.size);
+        
+      } catch (error) {
+        console.warn('배치 API 실패, 개별 조회로 폴백:', error.message);
+        
+        // Fallback: 개별 조회 (10개씩 배치)
+        const batchSize = 10;
+        for (let i = 0; i < productsToTrack.length; i += batchSize) {
+          const batch = productsToTrack.slice(i, i + batchSize);
+          
+          await Promise.all(batch.map(async (product) => {
+            try {
+              const historyRes = await axios.get(`${API_BASE}/api/products/${product.product_id}/history?days=2`);
+              const history = historyRes.data;
+              
+              if (history.length === 0 || history.length === 1) {
+                newProducts.add(product.product_id);
+              } else if (history.length >= 2) {
+                const current = history[0];
+                const previous = history[1];
+                
+                if (current.ranking !== previous.ranking) {
+                  const diff = previous.ranking - current.ranking;
+                  changesMap[product.product_id] = {
+                    old_ranking: previous.ranking,
+                    new_ranking: current.ranking,
+                    ranking_diff: diff,
+                    change_type: diff > 0 ? 'up' : 'down'
+                  };
+                }
+              }
+            } catch (err) {
+              // 조용히 실패
+            }
+          }));
+        }
+        
+        const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(2);
+        console.log(`✅ 순위 변동 조회 완료: ${elapsedTime}초 (폴백 모드)`);
+        console.log('순위 변동 개수:', Object.keys(changesMap).length);
+        console.log('신규 제품 개수:', newProducts.size);
+      }
+      
+      setRankingChanges({ ...changesMap, _newProducts: newProducts });
       
       // 현재 카테고리의 브랜드 통계 계산
       const brandStatsMap = {};
@@ -201,6 +381,86 @@ function App() {
         // 특정 카테고리 선택 시 해당 카테고리의 하시에 제품만
         allHashieProducts = allProductsRes.data.filter(p => p.brand_name === '하시에');
       }
+      
+      // 하시에 제품의 순위 변동도 추적 (TOP 100에 없어도) - 배치 API
+      const hashieProductsToTrack = allHashieProducts.filter(
+        hp => !productsToTrack.find(p => p.product_id === hp.product_id)
+      );
+      
+      if (hashieProductsToTrack.length > 0) {
+        console.log(`하시에 제품 순위 변동 추적 (배치 API - ${hashieProductsToTrack.length}개)...`);
+        const hashieStartTime = Date.now();
+        
+        try {
+          const hashieBatchRes = await axios.post(`${API_BASE}/api/products/batch/history`, {
+            product_ids: hashieProductsToTrack.map(p => p.product_id),
+            days: 2
+          });
+          
+          const hashieHistories = hashieBatchRes.data.data;
+          
+          for (const hashieProduct of hashieProductsToTrack) {
+            const history = hashieHistories[hashieProduct.product_id] || [];
+            
+            if (history.length === 0 || history.length === 1) {
+              newProducts.add(hashieProduct.product_id);
+            } else if (history.length >= 2) {
+              const current = history[0];
+              const previous = history[1];
+              
+              if (current.ranking !== previous.ranking) {
+                const diff = previous.ranking - current.ranking;
+                changesMap[hashieProduct.product_id] = {
+                  old_ranking: previous.ranking,
+                  new_ranking: current.ranking,
+                  ranking_diff: diff,
+                  change_type: diff > 0 ? 'up' : 'down'
+                };
+              }
+            }
+          }
+          
+          const hashieElapsed = ((Date.now() - hashieStartTime) / 1000).toFixed(2);
+          console.log(`✅ 하시에 제품 조회 완료: ${hashieElapsed}초 (배치 API)`);
+          
+        } catch (error) {
+          console.warn('하시에 배치 API 실패, 개별 조회로 폴백:', error.message);
+          
+          // Fallback: 개별 조회
+          await Promise.all(hashieProductsToTrack.map(async (hashieProduct) => {
+            try {
+              const historyRes = await axios.get(`${API_BASE}/api/products/${hashieProduct.product_id}/history?days=2`);
+              const history = historyRes.data;
+              
+              if (history.length === 0 || history.length === 1) {
+                newProducts.add(hashieProduct.product_id);
+              } else if (history.length >= 2) {
+                const current = history[0];
+                const previous = history[1];
+                
+                if (current.ranking !== previous.ranking) {
+                  const diff = previous.ranking - current.ranking;
+                  changesMap[hashieProduct.product_id] = {
+                    old_ranking: previous.ranking,
+                    new_ranking: current.ranking,
+                    ranking_diff: diff,
+                    change_type: diff > 0 ? 'up' : 'down'
+                  };
+                }
+              }
+            } catch (err) {
+              // 조용히 실패
+            }
+          }));
+          
+          const hashieElapsed = ((Date.now() - hashieStartTime) / 1000).toFixed(2);
+          console.log(`✅ 하시에 제품 조회 완료: ${hashieElapsed}초 (폴백 모드)`);
+        }
+      }
+      
+      // 업데이트된 변동 데이터 재설정
+      setRankingChanges({ ...changesMap, _newProducts: newProducts });
+      
       setHashieProducts(allHashieProducts);
       
       // 가장 높은 순위 찾기
@@ -219,39 +479,6 @@ function App() {
     } catch (error) {
       console.error('데이터 로딩 오류:', error);
       setLoading(false);
-    }
-  };
-
-  const triggerManualCrawl = async () => {
-    if (isCrawling) {
-      alert('이미 크롤링이 진행 중입니다.');
-      return;
-    }
-
-    const confirmed = window.confirm(
-      '수동 크롤링을 시작하시겠습니까?\n약 3-5분 정도 소요됩니다.'
-    );
-
-    if (!confirmed) return;
-
-    setIsCrawling(true);
-    setCrawlMessage('크롤링 시작 중...');
-
-    try {
-      const response = await axios.post(`${API_BASE}/api/crawl/trigger`);
-      setCrawlMessage('✅ 크롤링이 시작되었습니다! 3-5분 후 데이터가 업데이트됩니다.');
-      
-      // 5분 후 자동으로 데이터 새로고침
-      setTimeout(() => {
-        fetchData();
-        setCrawlMessage('');
-        setIsCrawling(false);
-      }, 5 * 60 * 1000);
-      
-    } catch (error) {
-      console.error('크롤링 트리거 오류:', error);
-      setCrawlMessage('❌ 크롤링 시작 실패: ' + (error.response?.data?.detail || error.message));
-      setIsCrawling(false);
     }
   };
 
@@ -325,7 +552,65 @@ function App() {
     <div className="container">
       {/* 헤더 */}
       <header className="header">
-        <h1>W CONCEPT 베스트 제품 추적</h1>
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
+          <h1 style={{margin: 0}}>W CONCEPT 베스트 제품 추적</h1>
+          
+          {/* Export 버튼 */}
+          <div style={{display: 'flex', gap: '10px'}}>
+            <button
+              onClick={exportToCSV}
+              style={{
+                padding: '8px 16px',
+                background: '#4CAF50',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '13px'
+              }}
+            >
+              📥 CSV 내보내기
+            </button>
+            <button
+              onClick={exportToJSON}
+              style={{
+                padding: '8px 16px',
+                background: '#2196F3',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '13px'
+              }}
+            >
+              📥 JSON 내보내기
+            </button>
+          </div>
+        </div>
+        
+        {/* TOP 제품 개수 선택 */}
+        <div style={{marginBottom: '15px'}}>
+          <label style={{marginRight: '10px', fontWeight: 'bold'}}>표시할 제품 수:</label>
+          <select 
+            value={topProductLimit}
+            onChange={(e) => setTopProductLimit(Number(e.target.value))}
+            style={{
+              padding: '6px 12px',
+              background: '#fff',
+              border: '2px solid #ddd',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            <option value={10}>TOP 10</option>
+            <option value={20}>TOP 20</option>
+            <option value={50}>TOP 50</option>
+            <option value={100}>TOP 100</option>
+          </select>
+        </div>
         
         {/* 카테고리 선택 */}
         <div className="category-selector" style={{
@@ -362,7 +647,37 @@ function App() {
           gap: '15px'
         }}>
           <button
-            onClick={triggerManualCrawl}
+            onClick={async () => {
+              if (isCrawling) {
+                alert('이미 크롤링이 진행 중입니다.');
+                return;
+              }
+
+              const confirmed = window.confirm(
+                '수동 크롤링을 시작하시겠습니까?\n약 3-5분 정도 소요됩니다.'
+              );
+
+              if (!confirmed) return;
+
+              setIsCrawling(true);
+              setCrawlMessage('크롤링 시작 중...');
+
+              try {
+                const response = await axios.post(`${API_BASE}/api/crawl/trigger`);
+                setCrawlMessage('✅ 크롤링이 시작되었습니다! 3-5분 후 데이터가 업데이트됩니다.');
+                
+                setTimeout(() => {
+                  fetchData();
+                  setCrawlMessage('');
+                  setIsCrawling(false);
+                }, 5 * 60 * 1000);
+                
+              } catch (error) {
+                console.error('크롤링 트리거 오류:', error);
+                setCrawlMessage('❌ 크롤링 시작 실패: ' + (error.response?.data?.detail || error.message));
+                setIsCrawling(false);
+              }
+            }}
             disabled={isCrawling}
             style={{
               padding: '10px 20px',
@@ -422,19 +737,43 @@ function App() {
       <div className="content">
         {/* 왼쪽: 제품 순위 */}
         <div className="section">
-          <h2>TOP 10 제품</h2>
+          <h2>TOP {topProductLimit} 제품</h2>
           <div className="product-list">
             {products.map((product, index) => (
               <div 
                 key={product.product_id} 
                 className={`product-item ${product.brand_name === '하시에' ? 'hashie-product' : ''}`}
+                style={{display: 'flex', gap: '15px', alignItems: 'center'}}
               >
                 <div className="product-rank">{index + 1}</div>
-                <div className="product-info">
+                
+                {/* 제품 썸네일 이미지 */}
+                {product.image_url && product.image_url !== 'N/A' && (
+                  <img 
+                    src={product.image_url} 
+                    alt={product.product_name}
+                    style={{
+                      width: '80px',
+                      height: '80px',
+                      objectFit: 'cover',
+                      borderRadius: '8px',
+                      border: '1px solid #e0e0e0'
+                    }}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                )}
+                
+                <div className="product-info" style={{flex: 1}}>
                   <div className="product-brand">
                     {product.brand_name}
                     {product.brand_name === '하시에' && <span className="hashie-badge"> 🎯 우리 제품</span>}
                     {product.category && <span style={{fontSize: '11px', marginLeft: '8px', color: '#666'}}>({product.category})</span>}
+                    <RankingChangeBadge 
+                      change={rankingChanges[product.product_id]} 
+                      isNew={rankingChanges._newProducts?.has(product.product_id)}
+                    />
                   </div>
                   <div className="product-name">{product.product_name}</div>
                   <div className="product-price">
@@ -493,13 +832,36 @@ function App() {
                   .filter(p => p.ranking > 10) // TOP 10 밖의 제품만
                   .sort((a, b) => a.ranking - b.ranking) // 순위순 정렬
                   .map(product => (
-                    <div key={product.product_id} className="product-item hashie-product">
+                    <div key={product.product_id} className="product-item hashie-product" style={{display: 'flex', gap: '15px', alignItems: 'center'}}>
                       <div className="product-rank">{product.ranking}</div>
-                      <div className="product-info">
+                      
+                      {/* 제품 썸네일 이미지 */}
+                      {product.image_url && product.image_url !== 'N/A' && (
+                        <img 
+                          src={product.image_url} 
+                          alt={product.product_name}
+                          style={{
+                            width: '80px',
+                            height: '80px',
+                            objectFit: 'cover',
+                            borderRadius: '8px',
+                            border: '1px solid #e0e0e0'
+                          }}
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                          }}
+                        />
+                      )}
+                      
+                      <div className="product-info" style={{flex: 1}}>
                         <div className="product-brand">
                           {product.brand_name}
                           <span className="hashie-badge"> 🎯 우리 제품</span>
                           {product.category && <span style={{fontSize: '11px', marginLeft: '8px', color: '#333'}}>({product.category})</span>}
+                          <RankingChangeBadge 
+                            change={rankingChanges[product.product_id]} 
+                            isNew={rankingChanges._newProducts?.has(product.product_id)}
+                          />
                         </div>
                         <div className="product-name">{product.product_name}</div>
                         <div className="product-price">
@@ -807,7 +1169,8 @@ function App() {
                       gap: '15px',
                       border: '1px solid #ddd',
                       padding: '15px',
-                      background: '#fff'
+                      background: '#fff',
+                      alignItems: 'center'
                     }}
                   >
                     <div className="product-rank" style={{
@@ -820,9 +1183,32 @@ function App() {
                     }}>
                       #{product.ranking}
                     </div>
+                    
+                    {/* 제품 썸네일 이미지 */}
+                    {product.image_url && product.image_url !== 'N/A' && (
+                      <img 
+                        src={product.image_url} 
+                        alt={product.product_name}
+                        style={{
+                          width: '80px',
+                          height: '80px',
+                          objectFit: 'cover',
+                          borderRadius: '8px',
+                          border: '1px solid #e0e0e0'
+                        }}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    )}
+                    
                     <div style={{flex: 1}}>
                       <div style={{fontSize: '14px', fontWeight: 'bold', marginBottom: '5px'}}>
                         {product.product_name}
+                        <RankingChangeBadge 
+                          change={rankingChanges[product.product_id]} 
+                          isNew={rankingChanges._newProducts?.has(product.product_id)}
+                        />
                       </div>
                       <div style={{fontSize: '16px', fontWeight: 'bold', marginBottom: '10px'}}>
                         ₩{product.price.toLocaleString()}
@@ -1118,31 +1504,60 @@ function App() {
                 {/* 가격 변화 차트 */}
                 <div>
                   <h3 style={{textAlign: 'center', marginBottom: '10px', color: '#000'}}>가격 변화</h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={productTrend.data}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#ddd" />
-                      <XAxis 
-                        dataKey="collected_at" 
-                        tickFormatter={(time) => new Date(time).toLocaleDateString('ko-KR', {timeZone: 'Asia/Seoul', month: 'short', day: 'numeric'})}
-                        tick={{fontSize: 11, fill: '#000'}}
-                      />
-                      <YAxis tick={{fill: '#000'}} />
-                      <Tooltip 
-                        contentStyle={{backgroundColor: '#fff', border: '1px solid #ddd', color: '#000'}}
-                        labelFormatter={(time) => formatKST(time)}
-                        formatter={(value) => [`₩${value?.toLocaleString()}`, '가격']}
-                      />
-                      <Legend />
-                      <Line 
-                        type="monotone" 
-                        dataKey="price" 
-                        stroke="#4CAF50" 
-                        strokeWidth={2}
-                        name="판매가"
-                        dot={{r: 4}}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
+                  {(() => {
+                    const prices = productTrend.data.map(d => d.price);
+                    const hasChange = new Set(prices).size > 1;
+                    
+                    return hasChange ? (
+                      <ResponsiveContainer width="100%" height={300}>
+                        <LineChart data={productTrend.data}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#ddd" />
+                          <XAxis 
+                            dataKey="collected_at" 
+                            tickFormatter={(time) => new Date(time).toLocaleDateString('ko-KR', {timeZone: 'Asia/Seoul', month: 'short', day: 'numeric'})}
+                            tick={{fontSize: 11, fill: '#000'}}
+                          />
+                          <YAxis tick={{fill: '#000'}} />
+                          <Tooltip 
+                            contentStyle={{backgroundColor: '#fff', border: '1px solid #ddd', color: '#000'}}
+                            labelFormatter={(time) => formatKST(time)}
+                            formatter={(value) => [`₩${value?.toLocaleString()}`, '가격']}
+                          />
+                          <Legend />
+                          <Line 
+                            type="monotone" 
+                            dataKey="price" 
+                            stroke="#4CAF50" 
+                            strokeWidth={2}
+                            name="판매가"
+                            dot={{r: 4}}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div style={{
+                        height: '300px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: '#f5f5f5',
+                        borderRadius: '8px',
+                        border: '1px solid #ddd'
+                      }}>
+                        <div style={{fontSize: '48px', marginBottom: '15px'}}>💰</div>
+                        <div style={{fontSize: '16px', fontWeight: 'bold', color: '#666', marginBottom: '5px'}}>
+                          가격 변동 없음
+                        </div>
+                        <div style={{fontSize: '24px', fontWeight: 'bold', color: '#4CAF50', marginBottom: '10px'}}>
+                          ₩{prices[0]?.toLocaleString()}
+                        </div>
+                        <div style={{fontSize: '13px', color: '#999'}}>
+                          해당 기간 동안 가격이 일정하게 유지되었습니다
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             ) : (
