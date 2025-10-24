@@ -860,6 +860,83 @@ async def startup_event():
     print("=" * 50)
 
 
+@app.post("/api/crawl/trigger")
+async def trigger_crawl():
+    """수동 크롤링 트리거"""
+    import subprocess
+    import asyncio
+    from pathlib import Path
+    
+    try:
+        # auto_crawl.py 경로 확인
+        crawl_script = Path(__file__).parent / "auto_crawl.py"
+        
+        if not crawl_script.exists():
+            raise HTTPException(
+                status_code=500,
+                detail="Crawl script not found"
+            )
+        
+        # 백그라운드에서 크롤링 실행
+        process = subprocess.Popen(
+            ["python3", str(crawl_script)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=str(crawl_script.parent)
+        )
+        
+        return {
+            "status": "started",
+            "message": "Crawling started in background",
+            "process_id": process.pid,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to start crawling: {str(e)}"
+        )
+
+
+@app.get("/api/crawl/status")
+async def get_crawl_status():
+    """크롤링 상태 조회"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        
+        # 최근 크롤링 정보
+        cursor.execute("""
+            SELECT 
+                MAX(collected_at) as last_crawl,
+                COUNT(DISTINCT product_id) as products_count,
+                COUNT(*) as records_count
+            FROM ranking_history
+            WHERE date(collected_at) = date('now')
+        """)
+        
+        today_stats = cursor.fetchone()
+        
+        # 전체 통계
+        cursor.execute("""
+            SELECT 
+                MAX(collected_at) as latest_collection,
+                COUNT(DISTINCT collected_at) as total_collections
+            FROM ranking_history
+        """)
+        
+        overall = cursor.fetchone()
+        
+        return {
+            "last_crawl": today_stats["last_crawl"],
+            "today_products": today_stats["products_count"],
+            "today_records": today_stats["records_count"],
+            "latest_collection": overall["latest_collection"],
+            "total_collections": overall["total_collections"],
+            "next_scheduled": "Every hour at :20 minutes"
+        }
+
+
 @app.on_event("shutdown")
 async def shutdown_event():
     """서버 종료 시 실행"""

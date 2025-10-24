@@ -45,6 +45,8 @@ function App() {
   const [productTrendDays, setProductTrendDays] = useState(7);
   const [categoryUpdateTimes, setCategoryUpdateTimes] = useState({});
   const [brandSearchQuery, setBrandSearchQuery] = useState('');
+  const [isCrawling, setIsCrawling] = useState(false);
+  const [crawlMessage, setCrawlMessage] = useState('');
 
   // localStorage에서 선택된 브랜드 불러오기
   useEffect(() => {
@@ -73,11 +75,11 @@ function App() {
     fetchData();
   }, [selectedCategory]);
 
-  // 매 시간 16분에 자동 업데이트
+  // 매 시간 20분에 자동 업데이트
   useEffect(() => {
     const scheduleNextUpdate = () => {
       const now = new Date();
-      const targetMinute = 16;
+      const targetMinute = 20;
       const currentMinute = now.getMinutes();
       const currentHour = now.getHours();
       
@@ -220,6 +222,39 @@ function App() {
     }
   };
 
+  const triggerManualCrawl = async () => {
+    if (isCrawling) {
+      alert('이미 크롤링이 진행 중입니다.');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      '수동 크롤링을 시작하시겠습니까?\n약 3-5분 정도 소요됩니다.'
+    );
+
+    if (!confirmed) return;
+
+    setIsCrawling(true);
+    setCrawlMessage('크롤링 시작 중...');
+
+    try {
+      const response = await axios.post(`${API_BASE}/api/crawl/trigger`);
+      setCrawlMessage('✅ 크롤링이 시작되었습니다! 3-5분 후 데이터가 업데이트됩니다.');
+      
+      // 5분 후 자동으로 데이터 새로고침
+      setTimeout(() => {
+        fetchData();
+        setCrawlMessage('');
+        setIsCrawling(false);
+      }, 5 * 60 * 1000);
+      
+    } catch (error) {
+      console.error('크롤링 트리거 오류:', error);
+      setCrawlMessage('❌ 크롤링 시작 실패: ' + (error.response?.data?.detail || error.message));
+      setIsCrawling(false);
+    }
+  };
+
   const toggleBrandSelection = (brandName) => {
     setSelectedBrands(prev => {
       if (prev.includes(brandName)) {
@@ -317,6 +352,43 @@ function App() {
               {cat.name}
             </button>
           ))}
+        </div>
+
+        {/* 수동 크롤링 버튼 */}
+        <div style={{
+          marginBottom: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '15px'
+        }}>
+          <button
+            onClick={triggerManualCrawl}
+            disabled={isCrawling}
+            style={{
+              padding: '10px 20px',
+              background: isCrawling ? '#ccc' : '#4CAF50',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: isCrawling ? 'not-allowed' : 'pointer',
+              fontWeight: 'bold',
+              fontSize: '14px',
+              transition: 'all 0.2s'
+            }}
+          >
+            {isCrawling ? '⏳ 크롤링 중...' : '🔄 수동 크롤링'}
+          </button>
+          {crawlMessage && (
+            <span style={{
+              padding: '8px 12px',
+              background: crawlMessage.includes('✅') ? '#e8f5e9' : '#ffebee',
+              color: crawlMessage.includes('✅') ? '#2e7d32' : '#c62828',
+              borderRadius: '4px',
+              fontSize: '13px'
+            }}>
+              {crawlMessage}
+            </span>
+          )}
         </div>
 
         <div className="stats-summary">
