@@ -1135,7 +1135,7 @@ function App() {
                       <Legend />
                       <Line 
                         type="monotone" 
-                        dataKey="sale_price" 
+                        dataKey="price" 
                         stroke="#4CAF50" 
                         strokeWidth={2}
                         name="판매가"
