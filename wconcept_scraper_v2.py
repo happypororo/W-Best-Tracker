@@ -6,7 +6,7 @@ W컨셉 베스트 상품 크롤러 v2
 
 import asyncio
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from playwright.async_api import async_playwright
 from bs4 import BeautifulSoup
 import re
@@ -218,7 +218,7 @@ class WConceptScraper:
             'discount_rate': price_info['discount_rate'],
             'image_url': image_url,
             'product_url': product_url,
-            'collected_at': datetime.now().isoformat()
+            'collected_at': datetime.now(timezone.utc).isoformat()
         }
     
     def _extract_price_info(self, elem):
@@ -290,7 +290,7 @@ class WConceptScraper:
     
     def _save_results(self):
         """결과 저장"""
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        timestamp = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
         
         # JSON 파일로 저장
         json_file = f'/home/user/webapp/wconcept_data_{self.category_key}_{timestamp}.json'
@@ -298,7 +298,7 @@ class WConceptScraper:
             json.dump({
                 'category': self.category_name,
                 'category_key': self.category_key,
-                'collected_at': datetime.now().isoformat(),
+                'collected_at': datetime.now(timezone.utc).isoformat(),
                 'total_products': len(self.products),
                 'products': self.products
             }, f, ensure_ascii=False, indent=2)

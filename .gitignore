@@ -42,7 +42,6 @@ venv.bak/
 .env.*.local
 
 # Database
-*.db
 *.sqlite
 *.sqlite3
 
@@ -85,8 +84,6 @@ tmp/
 
 # 데이터 파일
 wconcept_data_*.json
-wconcept_tracking.db
-wconcept_tracking.db-journal
 
 # 환경 변수
 dashboard/.env

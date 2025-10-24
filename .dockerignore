@@ -33,10 +33,10 @@ wheels/
 *.log
 logs/
 
-# 데이터베이스 (새로 생성됨)
-*.db
+# 데이터베이스 (프로덕션 DB는 포함)
 *.sqlite
 *.sqlite3
+# wconcept_tracking.db는 포함 (주석 처리)
 
 # 문서
 *.md

@@ -1,5 +1,5 @@
 # Fly.io 배포 설정
-app = "wconcept-tracker-backend"
+app = "w-best-tracker"
 primary_region = "sin"  # Singapore (한국과 가장 가까움)
 
 [build]

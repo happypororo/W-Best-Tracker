@@ -10,9 +10,9 @@ from datetime import datetime, timedelta
 import time
 
 def get_next_run_time():
-    """다음 실행 시간 계산 (매 시간 16분)"""
+    """다음 실행 시간 계산 (매 시간 20분)"""
     now = datetime.now()
-    target_minute = 16
+    target_minute = 20
     
     if now.minute < target_minute:
         # 이번 시간 16분
@@ -25,14 +25,20 @@ def get_next_run_time():
 
 def run_crawl():
     """크롤링 실행"""
+    import os
+    
     print("\n" + "=" * 80)
     print(f"🚀 자동 크롤링 시작: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 80)
     
     try:
+        # 현재 스크립트의 디렉토리를 기준으로 경로 설정
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        auto_crawl_path = os.path.join(current_dir, 'auto_crawl.py')
+        
         result = subprocess.run(
-            ['python3', '/home/user/webapp/auto_crawl.py'],
-            cwd='/home/user/webapp',
+            ['python3', auto_crawl_path],
+            cwd=current_dir,
             capture_output=True,
             text=True,
             timeout=600  # 10분 타임아웃
@@ -57,7 +63,7 @@ def run_crawl():
 def main():
     """메인 스케줄러 루프"""
     print("🔔 W Concept 크롤링 스케줄러 시작")
-    print("⏰ 실행 시간: 매 시간 16분")
+    print("⏰ 실행 시간: 매 시간 20분 (W컨셉 업데이트 :15 + 5분 버퍼)")
     print("=" * 80 + "\n")
     
     while True:

@@ -202,13 +202,29 @@ async def health_check():
         with get_db_connection() as conn:
             cursor = conn.cursor()
             
+            # 테이블 존재 여부 확인
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='products'")
+            products_table_exists = cursor.fetchone() is not None
+            
+            if not products_table_exists:
+                # 테이블이 없으면 기본 상태 반환 (여전히 healthy)
+                return HealthStatus(
+                    status="healthy",
+                    database_connected=True,
+                    total_products=0,
+                    total_brands=0,
+                    latest_collection=None,
+                    total_collections=0,
+                    api_version="2.0.0"
+                )
+            
             # 총 제품 수
             cursor.execute("SELECT COUNT(DISTINCT product_id) FROM products")
-            total_products = cursor.fetchone()[0]
+            total_products = cursor.fetchone()[0] or 0
             
             # 총 브랜드 수
             cursor.execute("SELECT COUNT(DISTINCT brand_name) FROM products")
-            total_brands = cursor.fetchone()[0]
+            total_brands = cursor.fetchone()[0] or 0
             
             # 최근 수집 시간
             cursor.execute("SELECT MAX(collected_at) FROM ranking_history")
@@ -216,7 +232,7 @@ async def health_check():
             
             # 총 수집 횟수
             cursor.execute("SELECT COUNT(DISTINCT collected_at) FROM ranking_history")
-            total_collections = cursor.fetchone()[0]
+            total_collections = cursor.fetchone()[0] or 0
             
             return HealthStatus(
                 status="healthy",
@@ -228,7 +244,16 @@ async def health_check():
                 api_version="2.0.0"
             )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")
+        # 에러가 발생해도 API는 살아있으므로 기본 상태 반환
+        return HealthStatus(
+            status="healthy",
+            database_connected=False,
+            total_products=0,
+            total_brands=0,
+            latest_collection=None,
+            total_collections=0,
+            api_version="2.0.0"
+        )
 
 
 @app.get("/api/categories/update-times", tags=["System"])
@@ -316,9 +341,9 @@ async def get_current_products(
                         rh.collected_at
                     FROM products p
                     JOIN ranking_history rh ON p.product_id = rh.product_id
-                    WHERE rh.collected_at = ?
+                    WHERE rh.collected_at = ? AND p.category_key = ?
                 """
-                params = [latest_time]
+                params = [latest_time, category]
             else:
                 # 카테고리별 최신 데이터 모두 가져오기
                 query = """
@@ -774,43 +799,31 @@ async def get_product_ranking_trend(
         raise HTTPException(status_code=500, detail=f"Failed to fetch product trend: {str(e)}")
 
 
-@app.post("/api/crawl/trigger", tags=["Admin"])
-async def trigger_crawl():
-    """수동으로 크롤링 트리거 (관리자용)"""
-    import subprocess
-    import os
-    
+@app.get("/api/crawl/status", tags=["Admin"])
+async def crawl_status():
+    """크롤링 상태 정보 (읽기 전용)"""
     try:
-        # 현재 디렉토리 확인
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        
-        # auto_crawl.py 실행
-        result = subprocess.run(
-            ['python3', os.path.join(current_dir, 'auto_crawl.py')],
-            cwd=current_dir,
-            capture_output=True,
-            text=True,
-            timeout=600  # 10분 타임아웃
-        )
-        
-        if result.returncode == 0:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            # 최근 수집 시간
+            cursor.execute("SELECT MAX(collected_at) FROM ranking_history")
+            latest_collection = cursor.fetchone()[0]
+            
+            # 총 수집 횟수
+            cursor.execute("SELECT COUNT(DISTINCT collected_at) FROM ranking_history")
+            total_collections = cursor.fetchone()[0]
+            
             return {
-                'status': 'success',
-                'message': 'Crawling completed successfully',
-                'stdout': result.stdout[-1000:] if len(result.stdout) > 1000 else result.stdout  # 마지막 1000자만
-            }
-        else:
-            return {
-                'status': 'error',
-                'message': 'Crawling failed',
-                'returncode': result.returncode,
-                'stderr': result.stderr[-1000:] if len(result.stderr) > 1000 else result.stderr
+                'status': 'read_only',
+                'message': 'Crawling is handled by GitHub Actions',
+                'latest_collection': format_datetime(latest_collection),
+                'total_collections': total_collections,
+                'info': 'Automatic crawling runs daily at 15:16 KST via GitHub Actions'
             }
     
-    except subprocess.TimeoutExpired:
-        raise HTTPException(status_code=504, detail="Crawling timeout (exceeded 10 minutes)")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to trigger crawl: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get crawl status: {str(e)}")
 
 
 # ==================== Error Handlers ====================
