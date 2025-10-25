@@ -81,8 +81,8 @@ jobs:
           sleep 10
           
           echo "🔄 Restarting app to load new DB..."
-          # 완전 재시작으로 새 DB 로드
-          flyctl apps restart w-best-tracker --force
+          # 완전 재시작으로 새 DB 로드 (올바른 플래그 사용)
+          flyctl apps restart w-best-tracker --force-stop --skip-health-checks
           
           echo "✅ Fly.io app restarted with single version!"
         env:
