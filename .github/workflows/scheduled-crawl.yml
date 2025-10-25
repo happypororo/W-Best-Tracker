@@ -64,15 +64,26 @@ jobs:
             echo "db_updated=true" >> $GITHUB_OUTPUT
           fi
       
-      # 🚀 NEW: DB가 업데이트되었으면 Fly.io 재시작
-      - name: 🔄 Restart Fly.io app
+      # 🚀 IMPROVED: DB가 업데이트되었으면 Fly.io 강제 재시작 (이전 버전 종료)
+      - name: 🔄 Force restart Fly.io app (single version only)
         if: steps.commit.outputs.db_updated == 'true'
         run: |
-          echo "🔄 Restarting Fly.io app to load new DB..."
-          curl -X POST https://api.fly.io/graphql \
-            -H "Authorization: Bearer ${{ secrets.FLY_API_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "query": "mutation { restartApp(appId: \"w-best-tracker\") { app { name } } }"
-            }'
-          echo "✅ Fly.io app restart triggered!"
+          echo "🔄 Installing flyctl..."
+          curl -L https://fly.io/install.sh | sh
+          export FLYCTL_INSTALL="/home/runner/.fly"
+          export PATH="$FLYCTL_INSTALL/bin:$PATH"
+          
+          echo "🔄 Forcing single instance deployment..."
+          # 1개 인스턴스만 유지하도록 스케일 조정 (이전 버전 강제 종료)
+          flyctl scale count 1 --app w-best-tracker --yes
+          
+          echo "⏳ Waiting for scale operation to complete..."
+          sleep 10
+          
+          echo "🔄 Restarting app to load new DB..."
+          # 완전 재시작으로 새 DB 로드
+          flyctl apps restart w-best-tracker --force
+          
+          echo "✅ Fly.io app restarted with single version!"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
