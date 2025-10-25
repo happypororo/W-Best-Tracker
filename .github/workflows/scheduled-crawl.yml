@@ -2,10 +2,10 @@ name: Scheduled Crawl and Deploy
 
 on:
   schedule:
-    # 매시간 20분 (UTC 기준)
-    # UTC 11:20 = KST 20:20
-    # UTC 12:20 = KST 21:20
-    - cron: '20 * * * *'
+    # 매시간 16분 (UTC 기준)
+    # UTC 11:16 = KST 20:20
+    # UTC 12:16 = KST 21:20
+    - cron: '16 * * * *'
   workflow_dispatch:  # 수동 실행 가능
 
 jobs:
