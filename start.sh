@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Fly.io 배포용 시작 스크립트
-# API 서버만 실행 (크롤링은 GitHub Actions에서 담당)
+# API 서버 + 자동 크롤링 스케줄러 실행 (Option G)
 
-echo "🚀 Starting W Concept Tracker Backend..."
+echo "🚀 Starting W Concept Tracker Backend (with scheduler)..."
 
 # 데이터베이스 경로 설정
 export DB_PATH="./wconcept_tracking.db"
@@ -34,8 +34,16 @@ fi
 echo "📊 Initializing database..."
 python3 -c "from database import Database; db = Database(); print('✅ Database initialized')"
 
-# API 서버 실행 (읽기 전용 모드)
-echo "🌐 Starting API server (read-only mode)..."
-echo "📝 Note: Crawling is handled by GitHub Actions (every hour at :16)"
+# 크롤링 스케줄러 백그라운드 실행 (Option G)
+echo "⏰ Starting crawling scheduler..."
+python3 scheduler.py > /tmp/scheduler.log 2>&1 &
+SCHEDULER_PID=$!
+echo "✅ Scheduler started (PID: $SCHEDULER_PID, runs every hour at :20)"
+echo "📝 Scheduler logs: /tmp/scheduler.log"
+
+# API 서버 실행 (읽기+쓰기 모드, DB는 Fly.io 로컬에 직접 저장)
+echo "🌐 Starting API server..."
+echo "📝 Note: Crawling runs directly on Fly.io (every hour at :20 KST)"
+echo "📝 No GitHub Actions delays, no redeployment needed!"
 
 uvicorn api:app --host 0.0.0.0 --port ${PORT:-8000}

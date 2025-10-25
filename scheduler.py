@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 W Concept 크롤링 스케줄러
-매 시간 16분에 자동으로 크롤링 실행
+매 시간 20분에 자동으로 크롤링 실행 (Fly.io 프로덕션)
 """
 
 import asyncio
@@ -10,15 +10,15 @@ from datetime import datetime, timedelta
 import time
 
 def get_next_run_time():
-    """다음 실행 시간 계산 (매 시간 16분)"""
+    """다음 실행 시간 계산 (매 시간 20분)"""
     now = datetime.now()
-    target_minute = 16
+    target_minute = 20
     
     if now.minute < target_minute:
-        # 이번 시간 16분
+        # 이번 시간 20분
         next_run = now.replace(minute=target_minute, second=0, microsecond=0)
     else:
-        # 다음 시간 16분
+        # 다음 시간 20분
         next_run = (now + timedelta(hours=1)).replace(minute=target_minute, second=0, microsecond=0)
     
     return next_run
@@ -62,8 +62,9 @@ def run_crawl():
 
 def main():
     """메인 스케줄러 루프"""
-    print("🔔 W Concept 크롤링 스케줄러 시작")
-    print("⏰ 실행 시간: 매 시간 16분 (W컨셉 업데이트 :15 + 1분 버퍼)")
+    print("🔔 W Concept 크롤링 스케줄러 시작 (Fly.io 프로덕션)")
+    print("⏰ 실행 시간: 매 시간 20분 (W컨셉 업데이트 :15 + 5분 버퍼)")
+    print("✅ DB는 Fly.io 디스크에 직접 저장되어 즉시 반영됨")
     print("=" * 80 + "\n")
     
     while True:
