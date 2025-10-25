@@ -121,20 +121,20 @@ function App() {
     fetchData();
   }, [selectedCategory, topProductLimit]);
 
-  // 매 시간 16분에 자동 업데이트
+  // 매 시간 20분에 자동 업데이트 (크롤링 완료 후)
   useEffect(() => {
     const scheduleNextUpdate = () => {
       const now = new Date();
-      const targetMinute = 16;
+      const targetMinute = 20;
       const currentMinute = now.getMinutes();
       const currentHour = now.getHours();
       
       let nextUpdate;
       if (currentMinute < targetMinute) {
-        // 이번 시간 16분
+        // 이번 시간 20분
         nextUpdate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), currentHour, targetMinute, 0);
       } else {
-        // 다음 시간 16분
+        // 다음 시간 20분
         nextUpdate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), currentHour + 1, targetMinute, 0);
       }
       
