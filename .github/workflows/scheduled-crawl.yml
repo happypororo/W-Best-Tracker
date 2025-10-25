@@ -3,8 +3,6 @@ name: Scheduled Crawl and Deploy
 on:
   schedule:
     # 매시간 20분 (UTC 기준)
-    # UTC 11:20 = KST 20:20
-    # UTC 12:20 = KST 21:20
     - cron: '20 * * * *'
   workflow_dispatch:  # 수동 실행 가능
 
@@ -48,6 +46,7 @@ jobs:
           echo "DB file size: $(du -h wconcept_tracking.db | cut -f1)"
       
       - name: 💾 Commit updated DB
+        id: commit
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
@@ -56,11 +55,24 @@ jobs:
           # 변경사항이 있을 때만 커밋
           if git diff --staged --quiet; then
             echo "No changes to commit"
+            echo "db_updated=false" >> $GITHUB_OUTPUT
           else
             TIMESTAMP=$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M:%S KST')
             git commit -m "chore: Update crawl data - $TIMESTAMP"
             git push
             echo "✅ DB updated and pushed"
+            echo "db_updated=true" >> $GITHUB_OUTPUT
           fi
       
-      # Fly.io는 main 브랜치 push로 자동 재배포됨!
+      # 🚀 NEW: DB가 업데이트되었으면 Fly.io 재시작
+      - name: 🔄 Restart Fly.io app
+        if: steps.commit.outputs.db_updated == 'true'
+        run: |
+          echo "🔄 Restarting Fly.io app to load new DB..."
+          curl -X POST https://api.fly.io/graphql \
+            -H "Authorization: Bearer ${{ secrets.FLY_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "query": "mutation { restartApp(appId: \"w-best-tracker\") { app { name } } }"
+            }'
+          echo "✅ Fly.io app restart triggered!"
