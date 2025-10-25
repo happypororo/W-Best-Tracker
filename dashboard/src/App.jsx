@@ -1595,7 +1595,7 @@ function App() {
             </>
           ) : '-'}
         </div>
-        <div>자동 업데이트: 매 시간 16분</div>
+        <div>자동 업데이트: 매 시간 20분</div>
       </footer>
     </div>
   );
