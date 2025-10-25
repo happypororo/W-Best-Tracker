@@ -5,7 +5,12 @@ on:
     branches:
       - main
       - genspark_ai_developer
-  workflow_dispatch:
+    paths-ignore:
+      - 'wconcept_tracking.db'  # DB 파일 변경은 배포 트리거하지 않음
+      - '**.md'                  # 문서 파일 변경 무시
+      - 'README.md'
+      - 'LICENSE'
+  workflow_dispatch:  # 수동 실행 가능
 
 jobs:
   deploy:
