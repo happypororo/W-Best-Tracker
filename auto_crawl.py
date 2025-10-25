@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 W Concept 자동 크롤링 스크립트
-매 시간 16분에 자동으로 모든 카테고리 크롤링 실행
+매 시간 16분에 자동으로 모든 카테고리 크롤링 실행 (GitHub Actions)
 """
 
 import asyncio

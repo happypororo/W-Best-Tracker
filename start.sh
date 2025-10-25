@@ -36,6 +36,6 @@ python3 -c "from database import Database; db = Database(); print('✅ Database 
 
 # API 서버 실행 (읽기 전용 모드)
 echo "🌐 Starting API server (read-only mode)..."
-echo "📝 Note: Crawling is handled by GitHub Actions (every hour at :20)"
+echo "📝 Note: Crawling is handled by GitHub Actions (every hour at :16)"
 
 uvicorn api:app --host 0.0.0.0 --port ${PORT:-8000}
