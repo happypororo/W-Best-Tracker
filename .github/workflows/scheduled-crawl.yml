@@ -3,7 +3,7 @@ name: Scheduled Crawl and Deploy
 on:
   schedule:
     # 매시간 20분 (UTC 기준)
-    - cron: '20 * * * *'
+    - cron: '16 * * * *'
   workflow_dispatch:  # 수동 실행 가능
 
 jobs:
