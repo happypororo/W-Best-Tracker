@@ -933,22 +933,22 @@ async def get_batch_product_history(request: BatchHistoryRequest):
 
 @app.post("/api/crawl/trigger")
 async def trigger_crawl():
-    """수동 크롤링 트리거"""
+    """수동 크롤링 트리거 (크롤링 + Git Push + 재배포)"""
     import subprocess
     import asyncio
     from pathlib import Path
     
     try:
-        # auto_crawl.py 경로 확인
-        crawl_script = Path(__file__).parent / "auto_crawl.py"
+        # manual_crawl_deploy.py 경로 확인
+        crawl_script = Path(__file__).parent / "manual_crawl_deploy.py"
         
         if not crawl_script.exists():
             raise HTTPException(
                 status_code=500,
-                detail="Crawl script not found"
+                detail="Manual crawl deploy script not found"
             )
         
-        # 백그라운드에서 크롤링 실행
+        # 백그라운드에서 크롤링 + 배포 실행
         process = subprocess.Popen(
             ["python3", str(crawl_script)],
             stdout=subprocess.PIPE,
@@ -958,7 +958,9 @@ async def trigger_crawl():
         
         return {
             "status": "started",
-            "message": "Crawling started in background",
+            "message": "Manual crawl + deployment started in background",
+            "info": "This will: 1) Crawl data, 2) Commit to Git, 3) Push to GitHub, 4) Trigger Fly.io redeploy",
+            "estimated_time": "5-6 minutes total",
             "process_id": process.pid,
             "timestamp": datetime.now().isoformat()
         }
@@ -966,7 +968,7 @@ async def trigger_crawl():
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to start crawling: {str(e)}"
+            detail=f"Failed to start manual crawl: {str(e)}"
         )
 
 

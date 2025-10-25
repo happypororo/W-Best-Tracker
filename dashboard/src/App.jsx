@@ -654,23 +654,23 @@ function App() {
               }
 
               const confirmed = window.confirm(
-                '수동 크롤링을 시작하시겠습니까?\n약 3-5분 정도 소요됩니다.'
+                '수동 크롤링 + 배포를 시작하시겠습니까?\n\n작업 단계:\n1. 크롤링 실행 (3분)\n2. GitHub Push (30초)\n3. Fly.io 재배포 (1-2분)\n\n총 5-6분 정도 소요됩니다.'
               );
 
               if (!confirmed) return;
 
               setIsCrawling(true);
-              setCrawlMessage('크롤링 시작 중...');
+              setCrawlMessage('🚀 크롤링 + 배포 시작 중...');
 
               try {
                 const response = await axios.post(`${API_BASE}/api/crawl/trigger`);
-                setCrawlMessage('✅ 크롤링이 시작되었습니다! 3-5분 후 데이터가 업데이트됩니다.');
+                setCrawlMessage('✅ 크롤링 + 배포가 시작되었습니다!\n\n📡 크롤링 중 → 💾 GitHub Push → 🚀 Fly.io 재배포\n\n약 5-6분 후 데이터가 업데이트됩니다.');
                 
                 setTimeout(() => {
                   fetchData();
                   setCrawlMessage('');
                   setIsCrawling(false);
-                }, 5 * 60 * 1000);
+                }, 6 * 60 * 1000);
                 
               } catch (error) {
                 console.error('크롤링 트리거 오류:', error);
@@ -691,7 +691,7 @@ function App() {
               transition: 'all 0.2s'
             }}
           >
-            {isCrawling ? '⏳ 크롤링 중...' : '🔄 수동 크롤링'}
+            {isCrawling ? '⏳ 크롤링 + 배포 중...' : '🔄 수동 크롤링 + 배포'}
           </button>
           {crawlMessage && (
             <span style={{
