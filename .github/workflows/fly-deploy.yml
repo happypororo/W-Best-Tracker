@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - genspark_ai_developer
   workflow_dispatch:
 
 jobs:
