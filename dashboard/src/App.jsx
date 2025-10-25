@@ -79,7 +79,7 @@ function App() {
   useEffect(() => {
     const scheduleNextUpdate = () => {
       const now = new Date();
-      const targetMinute = 20;
+      const targetMinute = 16;
       const currentMinute = now.getMinutes();
       const currentHour = now.getHours();
       
