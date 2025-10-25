@@ -22,3 +22,4 @@ Backend: https://w-best-tracker.fly.dev
 - Frontend: Cloudflare Pages
 - Backend: Fly.io
 - Auto-deploy: GitHub Actions
+
