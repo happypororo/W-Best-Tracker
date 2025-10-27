@@ -292,8 +292,8 @@ class WConceptScraper:
         """결과 저장"""
         timestamp = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
         
-        # JSON 파일로 저장
-        json_file = f'/home/user/webapp/wconcept_data_{self.category_key}_{timestamp}.json'
+        # JSON 파일로 저장 (현재 디렉토리 기준)
+        json_file = f'wconcept_data_{self.category_key}_{timestamp}.json'
         with open(json_file, 'w', encoding='utf-8') as f:
             json.dump({
                 'category': self.category_name,
