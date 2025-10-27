@@ -984,13 +984,27 @@ async def trigger_crawl():
             env=env
         )
         
-        # Lock은 크롤링이 끝나면 자동으로 해제되도록 백그라운드 태스크에서 처리
-        async def release_lock_after_crawl():
-            await asyncio.sleep(300)  # 5분 후 자동 해제 (크롤링 최대 시간)
-            if crawl_lock.locked():
-                crawl_lock.release()
+        # 백그라운드 태스크: 프로세스 완료 대기 후 Lock 해제
+        async def wait_and_release_lock():
+            loop = asyncio.get_event_loop()
+            # 프로세스 완료 대기 (최대 10분)
+            try:
+                # 비동기로 프로세스 완료 대기
+                await asyncio.wait_for(
+                    loop.run_in_executor(None, process.wait),
+                    timeout=600  # 10분 타임아웃
+                )
+                print(f"✅ Crawl process completed (PID: {process.pid})")
+            except asyncio.TimeoutError:
+                print(f"⚠️ Crawl process timeout after 10 minutes (PID: {process.pid})")
+                process.kill()  # 프로세스 강제 종료
+            finally:
+                # Lock 해제
+                if crawl_lock.locked():
+                    crawl_lock.release()
+                    print(f"🔓 Lock released (PID: {process.pid})")
         
-        asyncio.create_task(release_lock_after_crawl())
+        asyncio.create_task(wait_and_release_lock())
         
         return {
             "status": "started",
