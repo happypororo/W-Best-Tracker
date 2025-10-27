@@ -41,7 +41,7 @@ def run_crawl():
             cwd=current_dir,
             capture_output=True,
             text=True,
-            timeout=600  # 10분 타임아웃
+            timeout=1200  # 20분 타임아웃 (8개 카테고리 크롤링 대응)
         )
         
         print(result.stdout)
