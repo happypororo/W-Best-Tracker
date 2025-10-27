@@ -24,9 +24,12 @@ class Database:
     @contextmanager
     def get_connection(self):
         """데이터베이스 연결 컨텍스트 매니저"""
-        conn = sqlite3.connect(self.db_path)
+        # timeout 30초로 설정 (DB Lock 대기)
+        conn = sqlite3.connect(self.db_path, timeout=30.0)
         conn.row_factory = sqlite3.Row  # 딕셔너리 형태로 결과 반환
         try:
+            # WAL mode 활성화 (동시 읽기 허용)
+            conn.execute("PRAGMA journal_mode=WAL")
             yield conn
             conn.commit()
         except Exception as e:

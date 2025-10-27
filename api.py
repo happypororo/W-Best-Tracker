@@ -21,6 +21,8 @@ from datetime import datetime, timedelta
 import sqlite3
 from contextlib import contextmanager
 import json
+import os
+from threading import Lock
 
 # FastAPI 앱 초기화
 app = FastAPI(
@@ -40,15 +42,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 데이터베이스 설정
-DB_PATH = "wconcept_tracking.db"
+# 데이터베이스 설정 (환경변수 우선 사용)
+DB_PATH = os.environ.get('DB_PATH', 'wconcept_tracking.db')
+
+# 크롤링 동시 실행 방지 Lock
+crawl_lock = Lock()
 
 @contextmanager
 def get_db_connection():
     """데이터베이스 연결 컨텍스트 매니저"""
-    conn = sqlite3.connect(DB_PATH)
+    # timeout 30초로 설정 (DB Lock 대기)
+    conn = sqlite3.connect(DB_PATH, timeout=30.0)
     conn.row_factory = sqlite3.Row
     try:
+        # WAL mode 활성화 (동시 읽기 허용)
+        conn.execute("PRAGMA journal_mode=WAL")
         yield conn
     finally:
         conn.close()
@@ -938,34 +946,67 @@ async def trigger_crawl():
     import asyncio
     from pathlib import Path
     
+    # 이미 크롤링 실행 중인지 확인
+    if crawl_lock.locked():
+        raise HTTPException(
+            status_code=409,
+            detail="Crawl is already in progress. Please wait for the current crawl to complete."
+        )
+    
     try:
+        # Lock 획득 시도 (non-blocking)
+        if not crawl_lock.acquire(blocking=False):
+            raise HTTPException(
+                status_code=409,
+                detail="Crawl is already in progress"
+            )
+        
         # auto_crawl.py 경로 확인
         crawl_script = Path(__file__).parent / "auto_crawl.py"
         
         if not crawl_script.exists():
+            crawl_lock.release()
             raise HTTPException(
                 status_code=500,
                 detail="Crawl script not found"
             )
         
         # 백그라운드에서 크롤링 실행 (Option G: DB를 Fly.io에 직접 저장)
+        # 환경변수 DB_PATH 전달
+        env = os.environ.copy()
+        env['DB_PATH'] = DB_PATH
+        
         process = subprocess.Popen(
             ["python3", str(crawl_script)],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            cwd=str(crawl_script.parent)
+            cwd=str(crawl_script.parent),
+            env=env
         )
+        
+        # Lock은 크롤링이 끝나면 자동으로 해제되도록 백그라운드 태스크에서 처리
+        async def release_lock_after_crawl():
+            await asyncio.sleep(300)  # 5분 후 자동 해제 (크롤링 최대 시간)
+            if crawl_lock.locked():
+                crawl_lock.release()
+        
+        asyncio.create_task(release_lock_after_crawl())
         
         return {
             "status": "started",
             "message": "Manual crawl started (Option G)",
-            "info": "Crawling data and saving to Fly.io local DB (no GitHub push, no redeploy needed)",
+            "info": "Crawling data and saving to Fly.io Volume DB (no GitHub push, no redeploy needed)",
             "estimated_time": "2-3 minutes",
             "process_id": process.pid,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
+            "db_path": DB_PATH
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
+        if crawl_lock.locked():
+            crawl_lock.release()
         raise HTTPException(
             status_code=500,
             detail=f"Failed to start manual crawl: {str(e)}"
