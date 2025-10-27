@@ -5,9 +5,12 @@
 
 echo "🚀 Starting W Concept Tracker Backend (with scheduler)..."
 
-# 데이터베이스 경로 설정
-export DB_PATH="./wconcept_tracking.db"
+# 데이터베이스 경로 설정 (Volume 사용 시)
+export DB_PATH="${DB_PATH:-./wconcept_tracking.db}"
 echo "📁 Using database at: $DB_PATH"
+
+# Volume 디렉토리 생성 (존재하지 않으면)
+mkdir -p "$(dirname "$DB_PATH")"
 
 # 데이터베이스 파일 확인
 if [ -f "$DB_PATH" ]; then

@@ -9,6 +9,12 @@ primary_region = "sin"  # Singapore (한국과 가장 가까움)
   CHROME_HEADLESS = "true"
   SCRAPE_PRODUCT_LIMIT = "200"
   LOG_LEVEL = "INFO"
+  DB_PATH = "/data/wconcept_tracking.db"  # Volume에 저장
+
+# Volume 마운트 설정 (영구 저장소)
+[[mounts]]
+  source = "wconcept_data"
+  destination = "/data"
 
 [http_service]
   internal_port = 8000
