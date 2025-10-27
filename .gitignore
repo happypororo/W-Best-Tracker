@@ -44,6 +44,8 @@ venv.bak/
 # Database
 *.sqlite
 *.sqlite3
+*.db
+wconcept_tracking.db
 
 # Logs
 logs/*.log

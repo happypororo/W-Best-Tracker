@@ -466,3 +466,15 @@ W컨셉의 봇 차단으로 인해 **합법적이고 안정적인** 수집 방�
 
 어떤 방향으로 개발을 시작할지 알려주시면,
 즉시 코딩을 시작하겠습니다! 💻
+
+---
+
+## 🚀 Deployment
+
+### Fly.io Auto-Deployment
+- **Status**: ✅ Active
+- **Trigger**: Push to `main` branch
+- **Workflow**: `.github/workflows/fly-deploy.yml`
+- **Live URL**: https://w-best-tracker.fly.dev
+
+Every push to the main branch automatically triggers deployment to Fly.io.
