@@ -1,58 +1,70 @@
-name: Scheduled Crawl and Deploy
+name: Scheduled Crawl (Fly.io Direct)
 
 on:
   schedule:
-    # 매시간 16분 (UTC 기준)
-    # UTC 11:16 = KST 20:20
-    # UTC 12:16 = KST 21:20
     - cron: '20 * * * *'
-  workflow_dispatch:  # 수동 실행 가능
+  workflow_dispatch:
+
+concurrency:
+  group: scheduled-crawl
+  cancel-in-progress: false
 
 jobs:
-  crawl-and-deploy:
+  trigger-crawl:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     
     steps:
-      - name: 🔄 Checkout code
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: 🐍 Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-      
-      - name: 📦 Install dependencies
+      - name: 🚀 Trigger Fly.io Crawl
         run: |
-          pip install playwright beautifulsoup4 requests
-          playwright install chromium --with-deps
-      
-      - name: 🕷️ Run crawling
-        run: |
-          python3 auto_crawl.py
-        env:
-          PYTHONUNBUFFERED: '1'
-      
-      - name: 📊 Check DB file
-        run: |
-          ls -lh wconcept_tracking.db
-          echo "DB file size: $(du -h wconcept_tracking.db | cut -f1)"
-      
-      - name: 💾 Commit updated DB
-        run: |
-          git config user.name "GitHub Actions Bot"
-          git config user.email "actions@github.com"
-          git add wconcept_tracking.db
+          echo "⏰ $(date '+%Y-%m-%d %H:%M:%S UTC') - Triggering crawl on Fly.io..."
           
-          # 변경사항이 있을 때만 커밋
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            TIMESTAMP=$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M:%S KST')
-            git commit -m "chore: Update crawl data - $TIMESTAMP"
-            git push
-            echo "✅ DB updated and pushed"
-          fi
+          MAX_RETRIES=3
+          RETRY_DELAY=10
+          
+          for attempt in $(seq 1 $MAX_RETRIES); do
+            echo "🔄 Attempt $attempt/$MAX_RETRIES..."
+            
+            response=$(curl -X POST \
+              https://w-best-tracker.fly.dev/api/crawl/trigger \
+              -H "Content-Type: application/json" \
+              -w "\nHTTP_CODE:%{http_code}" \
+              --max-time 60 \
+              --connect-timeout 30 \
+              -s)
+            
+            http_code=$(echo "$response" | grep "HTTP_CODE" | cut -d: -f2)
+            body=$(echo "$response" | grep -v "HTTP_CODE")
+            
+            echo "📡 Response Code: $http_code"
+            echo "📦 Response Body: $body"
+            
+            if [ "$http_code" -eq 200 ] || [ "$http_code" -eq 202 ]; then
+              echo "✅ Crawl triggered successfully on Fly.io"
+              exit 0
+            fi
+            
+            if [ "$http_code" -eq 409 ]; then
+              echo "⚠️  Crawl already in progress - OK"
+              exit 0
+            fi
+            
+            echo "❌ Attempt $attempt failed (HTTP $http_code)"
+            
+            if [ $attempt -lt $MAX_RETRIES ]; then
+              echo "⏳ Waiting ${RETRY_DELAY}s before retry..."
+              sleep $RETRY_DELAY
+            fi
+          done
+          
+          echo "🔴 All $MAX_RETRIES attempts failed!"
+          exit 1
       
-      # Fly.io는 main 브랜치 push로 자동 재배포됨!
+      - name: 📊 Summary
+        if: success()
+        run: |
+          echo "✅ Crawl job completed successfully"
+          echo "📍 Location: Fly.io server"
+          echo "💾 Storage: /data/wconcept_tracking.db (Volume)"
+          echo "⚡ Speed: No deployment, instant update!"
+          echo "🎉 No Git push, no Queue issues!"
