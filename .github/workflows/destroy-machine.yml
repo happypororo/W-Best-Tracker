@@ -7,6 +7,7 @@ on:
         description: 'Machine ID to destroy (기본값: 7817642f9552d8)'
         required: false
         default: '7817642f9552d8'
+        
 
 jobs:
   destroy:
