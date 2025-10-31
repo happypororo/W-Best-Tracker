@@ -6,7 +6,8 @@ on:
       - main
       - genspark_ai_developer
     paths-ignore:
-      - 'wconcept_tracking.db'  # DB 파일 변경은 배포 트리거하지 않음
+      - 'dashboard/**'           # 프론트엔드 변경 무시
+      - 'wconcept_tracking.db'   # DB 파일 변경은 배포 트리거하지 않음
       - '**.md'                  # 문서 파일 변경 무시
       - 'README.md'
       - 'LICENSE'
