@@ -2,12 +2,9 @@ name: Destroy Fly.io Machine
 
 on:
   workflow_dispatch:
-    inputs:
-      machine_id:
-        description: 'Machine ID to destroy (기본값: 7817642f9552d8)'
-        required: false
-        default: '7817642f9552d8'
-        
+  push:
+    paths:
+      - '.github/workflows/destroy-machine.yml'
 
 jobs:
   destroy:
@@ -17,12 +14,11 @@ jobs:
     steps:
       - name: 🚀 Setup Fly.io CLI
         uses: superfly/flyctl-actions/setup-flyctl@master
-        
       
       - name: 💥 Destroy machine
         run: |
-          echo "Destroying machine: ${{ github.event.inputs.machine_id }}"
-          flyctl machine destroy ${{ github.event.inputs.machine_id }} --force --app w-best-tracker
+          echo "Destroying machine: 7817642f9552d8"
+          flyctl machine destroy 7817642f9552d8 --force --app w-best-tracker
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
       
