@@ -490,7 +490,6 @@ function App() {
               <h3>🎯 우리 제품 (하시에) - 총 {hashieProducts.length}개</h3>
               <div className="product-list">
                 {hashieProducts
-                  .filter(p => p.ranking > 10) // TOP 10 밖의 제품만
                   .sort((a, b) => a.ranking - b.ranking) // 순위순 정렬
                   .map(product => (
                     <div key={product.product_id} className="product-item hashie-product">
@@ -547,11 +546,7 @@ function App() {
                       </div>
                     </div>
                   ))}
-              </div>
-              {hashieProducts.filter(p => p.ranking > 10).length === 0 && (
-                <div className="hashie-all-in-top10">
-                  ✅ 모든 하시에 제품이 TOP 10에 포함되어 있습니다!
-                </div>
+              </div>         
               )}
             </div>
           )}
