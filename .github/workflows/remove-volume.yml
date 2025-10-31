@@ -1,0 +1,25 @@
+name: Remove Fly.io Volume
+
+on:
+  workflow_dispatch:
+
+jobs:
+  remove-volume:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 🚀 Setup Fly.io CLI
+        uses: superfly/flyctl-actions/setup-flyctl@master
+      
+      - name: 📋 List volumes
+        run: flyctl volumes list -a w-best-tracker
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      
+      - name: ⚠️ Instructions
+        run: |
+          echo "=========================================="
+          echo "위에서 볼륨 ID를 확인하세요 (vol_xxx 형식)"
+          echo "그 다음 아래 명령어로 제거하세요:"
+          echo "flyctl volumes delete <볼륨_ID> -a w-best-tracker"
+          echo "=========================================="
