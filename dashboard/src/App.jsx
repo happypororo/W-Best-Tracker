@@ -484,7 +484,7 @@ function App() {
             ))}
           </div>
 
-          {/* 하시에 제품 전체 표시 (TOP 10 밖) */}
+                   {/* 하시에 제품 전체 표시 */}
           {hashieProducts.length > 0 && (
             <div className="hashie-separate-section">
               <h3>🎯 우리 제품 (하시에) - 총 {hashieProducts.length}개</h3>
@@ -546,11 +546,11 @@ function App() {
                       </div>
                     </div>
                   ))}
-              </div>         
-              )}
+              </div>
             </div>
           )}
         </div>
+
 
         {/* 오른쪽: 브랜드 통계 */}
         <div className="section">
