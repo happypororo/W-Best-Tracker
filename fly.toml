@@ -56,8 +56,4 @@ primary_region = "sin"  # Singapore (한국과 가장 가까움)
     grace_period = "10s"
     method = "get"
     path = "/api/health"
-    
-[mounts]
-  source = "data"
-  destination = "/data"
 
