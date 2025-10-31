@@ -16,6 +16,7 @@ jobs:
     steps:
       - name: 🚀 Setup Fly.io CLI
         uses: superfly/flyctl-actions/setup-flyctl@master
+        
       
       - name: 💥 Destroy machine
         run: |
